@@ -325,24 +325,24 @@
                 title.innerText = showAll ? '所有判決球點' : '所有誤判球點';
 
                 const effectiveMissed = allCalls.filter(p => !p.is_correct && p.dist_cm >= tolerance);
-                const toDraw = showAll ? allCalls : effectiveMissed;
+                effectiveMissed.sort((a, b) => b.impact - a.impact);
 
-                toDraw.forEach((p, idx) => {
-                    const isEffectiveCorrect = p.is_correct || p.dist_cm < tolerance;
+                function drawPitch(p, isMissed) {
                     const zNorm = SZ_BOTTOM + (p.z - p.sz_bottom) * (SZ_TOP - SZ_BOTTOM) / (p.sz_top - p.sz_bottom);
                     const cx = mapX(p.x);
-                    const cy = mapZ(zNorm);
+                    const cy_val = mapZ(zNorm);
                     
                     const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
                     circle.setAttribute("cx", cx);
-                    circle.setAttribute("cy", cy);
+                    circle.setAttribute("cy", cy_val);
                     circle.setAttribute("r", "14.76");
                     circle.style.cursor = "pointer";
                     
-                    if (isEffectiveCorrect) {
+                    if (!isMissed) {
                         circle.setAttribute("fill", "transparent");
                         circle.setAttribute("stroke", p.called === "STRIKE" ? "rgba(255, 128, 128, 0.8)" : "rgba(128, 200, 128, 0.8)");
                         circle.setAttribute("stroke-width", "2");
+                        container.appendChild(circle);
                     } else {
                         const color = (p.called === "STRIKE") ? "rgba(255, 128, 128, 0.9)" : "rgba(128, 200, 128, 0.9)";
                         circle.setAttribute("fill", color);
@@ -373,22 +373,31 @@
                         circle.onmouseout = () => { tooltip.style.display = 'none'; };
                         
                         const mIndex = effectiveMissed.indexOf(p);
-                        if (mIndex !== -1) {
-                            const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                            text.setAttribute("x", cx);
-                            text.setAttribute("y", cy + 4);
-                            text.setAttribute("text-anchor", "middle");
-                            text.setAttribute("font-size", "12");
-                            text.setAttribute("font-weight", "bold");
-                            text.setAttribute("fill", "#000");
-                            text.textContent = mIndex + 1;
-                            text.style.pointerEvents = "none";
-                            container.appendChild(circle);
-                            container.appendChild(text);
-                            return;
-                        }
+                        const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                        text.setAttribute("x", cx);
+                        text.setAttribute("y", cy_val + 4);
+                        text.setAttribute("text-anchor", "middle");
+                        text.setAttribute("font-size", "12");
+                        text.setAttribute("font-weight", "bold");
+                        text.setAttribute("fill", "#000");
+                        text.textContent = mIndex + 1;
+                        text.style.pointerEvents = "none";
+                        
+                        container.appendChild(circle);
+                        container.appendChild(text);
                     }
-                    container.appendChild(circle);
+                }
+
+                if (showAll) {
+                    allCalls.forEach(p => {
+                        const isCorrect = p.is_correct || p.dist_cm < tolerance;
+                        if (isCorrect) drawPitch(p, false);
+                    });
+                }
+
+                const reverseMissed = [...effectiveMissed].reverse();
+                reverseMissed.forEach(p => {
+                    drawPitch(p, true);
                 });
             }
 
@@ -425,6 +434,8 @@
                 document.getElementById('tolerance-val').innerText = currentTolerance.toFixed(1);
                 
                 const effectiveMissed = allCalls.filter(p => !p.is_correct && p.dist_cm >= currentTolerance);
+                effectiveMissed.sort((a, b) => b.impact - a.impact);
+
                 const effectiveCorrect = allCalls.filter(p => p.is_correct || p.dist_cm < currentTolerance);
                 
                 const total = allCalls.length;
