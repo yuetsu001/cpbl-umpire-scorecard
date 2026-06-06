@@ -1,0 +1,519 @@
+
+    <!DOCTYPE html>
+    <html lang="zh-TW">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=850">
+        <title>Umpire Scorecard - 江春緯</title>
+        <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+        <style>
+            body { font-family: 'Noto Sans TC', sans-serif; background-color: #e5e5e5; color: #111; margin: 0; padding: 40px 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; box-sizing: border-box; }
+            
+            /* Interactive Toolbar */
+            .toolbar { 
+                width: 850px; 
+                background: #fff; 
+                padding: 15px 25px; 
+                margin-bottom: 20px; 
+                box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
+                border-radius: 8px; 
+                display: flex; 
+                gap: 15px; 
+                align-items: center;
+                box-sizing: border-box;
+            }
+            .toolbar-title { font-weight: 900; color: #0b2447; margin-right: auto; }
+            .btn { 
+                padding: 8px 16px; 
+                border-radius: 6px; 
+                border: 1px solid #ddd; 
+                background: #f8f9fa; 
+                cursor: pointer; 
+                font-family: inherit; 
+                font-weight: 700; 
+                transition: all 0.2s;
+                font-size: 14px;
+            }
+            .btn:hover { background: #e9ecef; border-color: #ccc; }
+            .btn.active { background: #0b2447; color: #fff; border-color: #0b2447; }
+            
+            .slider-group { display: flex; align-items: center; gap: 10px; margin-left: 20px; border-left: 1px solid #ddd; padding-left: 20px; }
+            .slider-group label { font-weight: 700; font-size: 14px; color: #444; min-width: 120px; }
+            input[type=range] { width: 150px; cursor: pointer; }
+
+            .card { background: #fafafa; width: 850px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); overflow: hidden; position: relative; }
+            
+            /* Top Banner */
+            .banner { background-color: #0b2447; color: #fff; padding: 10px 20px; font-weight: 900; font-size: 24px; letter-spacing: 1px; display: flex; justify-content: space-between; }
+            .banner .league { color: #e4d804; }
+            
+            /* Header */
+            .header { text-align: center; padding: 20px 40px 10px; }
+            .header h1 { font-size: 44px; margin: 0; font-weight: 900; letter-spacing: -1px; }
+            .header-info { font-size: 20px; color: #444; margin-bottom: 15px; display: flex; justify-content: center; gap: 30px; font-weight: 700; }
+            
+            /* Match Info */
+            .match-info { display: flex; justify-content: center; align-items: center; gap: 0; margin-bottom: 20px; width: 100%; }
+            .team-box { width: 220px; padding: 10px 15px; border-radius: 8px; font-weight: 900; font-size: 22px; color: white; text-align: center; flex-shrink: 0; }
+            .score-box { font-size: 48px; font-weight: 900; display: flex; align-items: center; gap: 0; width: 200px; justify-content: center; flex-shrink: 0; }
+            .score-box .score { flex: 1; text-align: center; width: 70px; }
+            .score-box .hyphen { flex: 0; color: #888; }
+            .date-box { text-align: left; margin-left: 20px; border-left: 2px solid #ddd; padding-left: 20px; }
+            .date-box .title { color: #888; font-weight: bold; font-size: 16px; letter-spacing: 1px; text-transform: uppercase; }
+            .date-box .date { font-size: 28px; font-weight: 900; color: #333; }
+            
+            /* Metrics Row */
+            .stats-row { display: flex; justify-content: space-around; padding: 10px 10px; margin-bottom: 25px; flex-wrap: wrap; gap: 5px; }
+            .donut-container { margin-bottom: 10px; }
+            .donut-label { font-size: 18px; font-weight: 700; margin-bottom: 10px; color: #333; white-space: pre-line; height: 44px; display: flex; align-items: flex-end; justify-content: center; }
+            
+            /* Main Content Area */
+            .main-content { display: flex; justify-content: space-between; padding: 0 40px 10px; gap: 40px; }
+            
+            /* Footer */
+            .footer { background: #f0f0f0; padding: 15px 40px; border-top: 1px solid #eee; font-size: 12px; color: #888; text-align: center; }
+            
+            /* Plot Container */
+            .plot-container { flex: 1; text-align: center; }
+            .plot-title { font-size: 28px; font-weight: 900; margin-bottom: 5px; }
+            .plot-subtitle { font-size: 14px; color: #333; margin-bottom: 15px; font-weight: 700; }
+            .plot-subtitle span.red { color: #D32F2F; }
+            .zone-svg { background: #fafafa; }
+            
+            /* Details Container */
+            .details-container { flex: 1; }
+            .details-title { font-size: 28px; font-weight: 900; margin-bottom: 5px; text-align: center; }
+            .details-subtitle { font-size: 14px; color: #555; margin-bottom: 20px; font-weight: 700; text-align: center; }
+            
+            .missed-list { list-style-type: none; padding: 0; margin: 0; }
+            .missed-list li { margin-bottom: 20px; }
+            .missed-list .rank { font-size: 18px; font-weight: bold; float: left; width: 25px; }
+            .missed-list .content { margin-left: 25px; font-size: 16px; line-height: 1.5; }
+            .missed-list .context { font-weight: bold; display: flex; align-items: center; }
+            .missed-list .players { color: #444; }
+            .missed-list .call-result { margin-top: 5px; font-weight: 700; display: flex; align-items: center; gap: 5px; flex-wrap: nowrap; }
+            .badge-cross { border: 1px solid #333; padding: 2px 4px; border-radius: 4px; font-size: 11px; white-space: nowrap; }
+            .badge-check { border: 1px solid #333; padding: 2px 4px; border-radius: 4px; font-size: 11px; white-space: nowrap; }
+            .run-impact { background: #1976D2; color: white; padding: 2px 6px; border-radius: 4px; font-size: 14px; font-weight: 900; white-space: nowrap; }
+
+            /* Tooltip Styling */
+            .tooltip {
+                position: absolute;
+                background: #fff;
+                border: 1px solid #ccc;
+                border-radius: 8px;
+                padding: 12px;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+                pointer-events: none;
+                z-index: 1000;
+                display: none;
+                width: max-content;
+                min-width: 260px;
+                max-width: 320px;
+                font-family: 'Noto Sans TC', sans-serif;
+            }
+            .tooltip .context { font-weight: bold; display: flex; align-items: center; font-size: 14px; margin-bottom: 5px; }
+            .tooltip .players { color: #444; font-size: 13px; margin-bottom: 8px; line-height: 1.4; }
+            .tooltip .call-result { display: flex; align-items: center; gap: 5px; font-size: 12px; flex-wrap: nowrap; }
+            .tooltip .run-impact { color: white; padding: 2px 6px; border-radius: 4px; font-size: 13px; font-weight: 900; white-space: nowrap; }
+            .tooltip .badge-cross, .tooltip .badge-check { border: 1px solid #333; padding: 1px 4px; border-radius: 3px; }
+
+            /* Hide toolbar and tooltip for print/screenshot */
+            @media print {
+                .toolbar, .tooltip { display: none !important; }
+                body { padding: 0; }
+            }
+        </style>
+    
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-VN06NT1ZHE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-VN06NT1ZHE');
+    </script>
+</head>
+    <body>
+        <div id="tooltip" class="tooltip"></div>
+        <div class="toolbar">
+            <div class="toolbar-title">顯示方式</div>
+            <button id="btn-missed" class="btn active" onclick="showMissed()">僅顯示誤判</button>
+            <button id="btn-all" class="btn" onclick="showAll()">顯示所有判決</button>
+            
+            <div class="slider-group">
+                <label>容錯範圍: <span id="tolerance-val">0.0</span> cm</label>
+                <input type="range" id="tolerance-slider" min="0" max="10" step="0.1" value="0" oninput="updateTolerance(this.value)">
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="banner">
+                <span class="league">中華職棒 例行賽</span>
+            </div>
+            
+            <div class="header">
+                <h1>主審 江春緯 判決報告</h1>
+                <div class="header-info">
+                    <span>場次: 142</span>
+                    <span>日期: 2026-06-05</span>
+                    <span>球場: 洲際</span>
+                </div>
+                
+                <div class="match-info">
+                    <div class="team-box" style="background-color: #BF0040">樂天桃猿</div>
+                    <div class="score-box">
+                        <span class="score">6</span>
+                        <span class="hyphen">-</span>
+                        <span class="score">7</span>
+                    </div>
+                    <div class="team-box" style="background-color: #FFD700">中信兄弟</div>
+                </div>
+            </div>
+            
+            <div class="stats-row">
+                
+    <div class="donut-container" style="width: 140px; text-align: center;">
+        <div class="donut-label" style="height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; margin-bottom: 5px;">
+            <span style="font-size: 15px; font-weight: 700; line-height: 1.2; color: #333;">整體準確率</span>
+            <div style="width: 50px; height: 1px; background-color: #bbb; margin: 3px 0;"></div>
+            <span style="font-size: 13px; font-weight: 700; line-height: 1.2; color: #666;">平均誤差</span>
+        </div>
+        <svg width="140" height="140" viewBox="0 0 150 150">
+            <circle cx="75" cy="75" r="60" fill="transparent" stroke="#e0e0e0" stroke-width="15" />
+            <circle id="overall-circle" cx="75" cy="75" r="60" fill="transparent" stroke="#111" stroke-width="15" 
+                    stroke-dasharray="376.9908" stroke-dashoffset="21.157646938775486" 
+                    stroke-linecap="round" transform="rotate(-90 75 75)" />
+            <text id="overall-acc-text" x="75" y="65" text-anchor="middle" font-size="24" font-weight="900" fill="#111">94.4%</text>
+            <line x1="35" y1="78" x2="115" y2="78" stroke="#ccc" stroke-width="2" />
+            <text id="overall-rmse-text" x="75" y="105" text-anchor="middle" font-size="18" font-weight="700" fill="#555">1.0 cm</text>
+        </svg>
+        <div id="overall-sub" style="font-size: 14px; font-weight: bold; color: #555;">185/196</div>
+    </div>
+    
+                
+    <div class="donut-container" style="width: 140px; text-align: center;">
+        <div class="donut-label">壞球準確率</div>
+        <svg width="140" height="140" viewBox="0 0 150 150">
+            <circle cx="75" cy="75" r="60" fill="transparent" stroke="#e0e0e0" stroke-width="15" />
+            <circle id="ball-circle" cx="75" cy="75" r="60" fill="transparent" stroke="#4CAF50" stroke-width="15" 
+                    stroke-dasharray="376.9908" stroke-dashoffset="9.120745161290301" 
+                    stroke-linecap="round" transform="rotate(-90 75 75)" />
+            <text id="ball-text" x="75" y="85" text-anchor="middle" font-size="28" font-weight="900" fill="#111">97.6%</text>
+        </svg>
+        <div id="ball-sub" style="font-size: 14px; font-weight: bold; color: #555;">121/124</div>
+    </div>
+    
+                
+    <div class="donut-container" style="width: 140px; text-align: center;">
+        <div class="donut-label">好球準確率</div>
+        <svg width="140" height="140" viewBox="0 0 150 150">
+            <circle cx="75" cy="75" r="60" fill="transparent" stroke="#e0e0e0" stroke-width="15" />
+            <circle id="strike-circle" cx="75" cy="75" r="60" fill="transparent" stroke="#FF5252" stroke-width="15" 
+                    stroke-dasharray="376.9908" stroke-dashoffset="41.887866666666696" 
+                    stroke-linecap="round" transform="rotate(-90 75 75)" />
+            <text id="strike-text" x="75" y="85" text-anchor="middle" font-size="28" font-weight="900" fill="#111">88.9%</text>
+        </svg>
+        <div id="strike-sub" style="font-size: 14px; font-weight: bold; color: #555;">64/72</div>
+    </div>
+    
+                
+                
+    <div class="donut-container" style="width: 140px; text-align: center;">
+        <div class="donut-label">總體獲益</div>
+        <svg width="140" height="140" viewBox="0 0 150 150">
+            <circle id="favor-circle" cx="75" cy="75" r="67.5" fill="#BF0040" stroke="none" />
+            <text id="favor-text" x="75" y="85" text-anchor="middle" font-size="28" font-weight="900" fill="#fff">+0.26</text>
+        </svg>
+        <div id="favor-sub" style="font-size: 14px; font-weight: bold; color: #BF0040;">樂天桃猿</div>
+    </div>
+    
+                
+                
+    <div class="donut-container" style="width: 140px; text-align: center;">
+        <div class="donut-label">判決一致性</div>
+        <svg width="140" height="140" viewBox="0 0 150 150">
+            <circle cx="75" cy="75" r="60" fill="transparent" stroke="#e0e0e0" stroke-width="15" />
+            <circle id="consistency-circle" cx="75" cy="75" r="60" fill="transparent" stroke="#111" stroke-width="15" 
+                    stroke-dasharray="376.9908" stroke-dashoffset="25.0044918367347" 
+                    stroke-linecap="round" transform="rotate(-90 75 75)" />
+            <text id="consistency-text" x="75" y="85" text-anchor="middle" font-size="28" font-weight="900" fill="#111">93.4%</text>
+        </svg>
+        <div id="consistency-sub" style="font-size: 14px; font-weight: bold; color: #555;">183/196</div>
+    </div>
+    
+            </div>
+            
+            <div class="main-content">
+                <div class="plot-container">
+                    <div id="plot-title-text" class="plot-title">所有誤判球點</div>
+                    <div class="plot-subtitle">正確好球帶與 <span class="red">主審估計好球帶</span> (捕手視角)</div>
+                    <svg class="zone-svg" width="400" height="450" viewBox="0 0 400 450">
+                        <!-- EUZ Blob -->
+                        <polygon points="187.79661016949154,324.38743234645483 179.66101694915255,324.6887683681647 171.52542372881356,324.73403169177675 163.38983050847457,324.24557541556965 162.7918354203228,324.1525423728814 155.25423728813558,322.7616935933946 147.1186440677966,319.8219535290297 138.98305084745766,315.12320840591195 137.2060586762574,313.7519260400616 130.84745762711867,306.9099035342633 128.06012720894873,303.35130970724197 122.71186440677968,294.7920218777422 121.56849303568026,292.9506933744222 114.57627118644069,282.9944324040615 114.23508438436956,282.55007704160244 106.4406779661017,275.0155372872457 103.39233182310174,272.1494607087828 98.30508474576271,268.2452423883976 91.18581052181078,261.748844375963 90.16949152542372,260.8337587216517 82.32259500163745,251.34822804314328 82.03389830508479,250.92087742519695 76.82398175047899,240.9476117103236 73.89830508474577,232.02370851499774 73.47867423618095,230.54699537750386 72.02902179556676,220.14637904468412 72.02683165207189,209.7457627118644 73.2818701602039,199.34514637904468 73.8983050847458,196.49781176204556 75.522591865988,188.944530046225 78.20552872638527,178.54391371340523 80.83319061194504,168.14329738058552 82.03389830508479,162.80626870395685 83.07306219911756,157.7426810477658 85.04923009899647,147.3420647149461 87.39847864270769,136.94144838212634 90.16949152542372,128.5451418221635 90.84688291036844,126.54083204930663 96.1082855729223,116.14021571648686 98.30508474576271,113.0459185715614 104.4720251389832,105.73959938366721 106.4406779661017,103.84202677023683 114.57627118644069,97.44953416346334 117.97915727063798,95.3389830508475 122.71186440677968,92.52323141873023 130.84745762711867,88.56280776941855 138.98305084745766,85.21942038661905 139.74341307551842,84.93836671802774 147.1186440677966,82.09090109195398 155.25423728813558,79.41548395898019 163.38983050847457,77.31049841835369 171.52542372881356,75.96419629270457 179.66101694915255,75.53638217339068 187.79661016949154,76.04653872397989 195.93220338983053,77.31617345384961 204.06779661016952,78.9637245092469 212.2033898305085,80.45390967747937 220.33898305084745,81.2686636829078 228.47457627118644,81.21721244471149 236.61016949152543,80.63442896878973 244.74576271186442,80.19414662079055 252.8813559322034,80.54529099953083 261.0169491525424,82.15129234243261 268.1115943433999,84.93836671802774 269.1525423728813,85.36706663933643 277.2881355932203,90.3997483636042 283.2204043703098,95.3389830508475 285.4237288135593,97.3969761557442 293.1149753169615,105.73959938366721 293.5593220338983,106.30180939418807 301.0644243586902,116.14021571648686 301.6949152542373,117.14911079081571 307.74926752257096,126.54083204930663 309.8305084745763,130.89283525299345 312.864458198287,136.9414483821264 316.04043201066145,147.3420647149461 317.3895928406422,157.7426810477658 317.40186237652256,168.14329738058552 316.6568063082568,178.54391371340523 315.57827355054263,188.944530046225 314.30722891220705,199.34514637904468 312.799446409566,209.7457627118644 311.0089747329857,220.14637904468412 309.8305084745763,226.29087090435982 309.02415115078713,230.54699537750386 307.01742077739647,240.9476117103236 305.00081265392,251.34822804314328 302.82213591343054,261.748844375963 301.6949152542373,266.28932866374544 300.18090777568995,272.1494607087828 296.72201504977176,282.55007704160244 293.5593220338983,289.66721027251936 291.88233972851407,292.9506933744222 285.4237288135593,302.4511180008294 284.63543571019164,303.35130970724197 277.2881355932204,309.97281177832724 270.9515268247218,313.75192604006156 269.1525423728813,314.6672743997119 261.0169491525424,317.48312775493287 252.8813559322034,319.2579477994379 244.74576271186442,320.4610890714612 236.61016949152543,321.3724394757275 228.47457627118644,322.1183406800394 220.33898305084745,322.7353286886619 212.2033898305085,323.2362550055572 204.06779661016952,323.64899688220737 195.93220338983053,324.01735514829574 192.6386573872819,324.1525423728814 187.79661016949154,324.38743234645483" fill="rgba(255, 182, 193, 0.5)" />
+
+                        <!-- Strike Zone Box -->
+                        <rect x="112.00000000000001" y="117.40909090909093" width="176.0" height="195.13636363636363" fill="transparent" stroke="#111" stroke-width="2" />
+                        <!-- Pitches Container -->
+                        <g id="dots-container">
+                        </g>
+                    </svg>
+                </div>
+                <div class="details-container">
+                    <div class="details-title">關鍵判決</div>
+                    <div class="details-subtitle">對得分期望值影響最大的判決</div>
+                    <ul id="missed-list" class="missed-list"></ul>
+                </div>
+            </div>
+            
+            <script>
+            const allCalls = [{"x": -0.00600456, "z": 0.7383901920000001, "impact": 0.0, "dist_cm": 25.089544000000004, "pitcher": "鄭浩均", "batter": "何品室融", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 1, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "中信兄弟", "is_correct": true}, {"x": 0.283171392, "z": 1.412665704, "impact": 0.0, "dist_cm": 40.12931121350873, "pitcher": "鄭浩均", "batter": "何品室融", "count_b": 0, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 1, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.164494464, "z": 0.9484339680000001, "impact": 0.0, "dist_cm": 5.146603199999995, "pitcher": "鄭浩均", "batter": "陳晨威", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 1, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "中信兄弟", "is_correct": true}, {"x": 0.273762216, "z": 0.7949214480000001, "impact": 0.0, "dist_cm": 1.6862215999999999, "pitcher": "鄭浩均", "batter": "陳晨威", "count_b": 0, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 1, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.2814828, "z": 0.408160728, "impact": 0.0, "dist_cm": 6.229217187525431, "pitcher": "鄭浩均", "batter": "陳晨威", "count_b": 1, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 1, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.06845808, "z": 0.542230056, "impact": 0.0, "dist_cm": 9.853005599999994, "pitcher": "鄭浩均", "batter": "劉子杰", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 1, "outs": 1, "bases": [1, 0, 0], "sz_top": 0.9523, "sz_bottom": 0.4806, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.185095896, "z": 0.29117544, "impact": 0.0, "dist_cm": 15.252456000000002, "pitcher": "鄭浩均", "batter": "劉子杰", "count_b": 0, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 1, "outs": 1, "bases": [1, 0, 0], "sz_top": 0.9523, "sz_bottom": 0.4806, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.4325233920000001, "z": 0.335636616, "impact": 0.0, "dist_cm": 22.035585483700302, "pitcher": "鄭浩均", "batter": "劉子杰", "count_b": 1, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 1, "outs": 1, "bases": [1, 0, 0], "sz_top": 0.9523, "sz_bottom": 0.4806, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.332070456, "z": 0.8609838, "impact": 0.0, "dist_cm": 7.517045600000001, "pitcher": "艾菩樂", "batter": "張士綸", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 1, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "中信兄弟", "is_correct": true}, {"x": 0.140305536, "z": 0.8838834240000001, "impact": 0.0, "dist_cm": 11.6594464, "pitcher": "艾菩樂", "batter": "岳政華", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 1, "outs": 0, "bases": [1, 0, 0], "sz_top": 0.9737000000000001, "sz_bottom": 0.49140000000000006, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.143969232, "z": 1.006638576, "impact": 0.0, "dist_cm": 2.001142400000007, "pitcher": "艾菩樂", "batter": "王威晨", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 1, "outs": 1, "bases": [0, 0, 1], "sz_top": 0.9897500000000001, "sz_bottom": 0.49950000000000006, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.153927048, "z": 1.320451512, "impact": 0.0, "dist_cm": 30.450151199999993, "pitcher": "艾菩樂", "batter": "詹子賢", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 1, "outs": 2, "bases": [0, 0, 1], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.487808016, "z": 0.702667632, "impact": 0.0, "dist_cm": 23.090801600000006, "pitcher": "艾菩樂", "batter": "詹子賢", "count_b": 1, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 1, "outs": 2, "bases": [0, 0, 1], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.411443424, "z": 0.272951448, "impact": 0.0, "dist_cm": 25.56017378487528, "pitcher": "艾菩樂", "batter": "詹子賢", "count_b": 2, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 1, "outs": 2, "bases": [0, 0, 1], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.270909288, "z": 0.39529512, "impact": 0.0, "dist_cm": 7.4249268627739315, "pitcher": "艾菩樂", "batter": "詹子賢", "count_b": 3, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 1, "outs": 2, "bases": [0, 0, 1], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.3198876, "z": 0.295817544, "impact": 0.0, "dist_cm": 16.60635999186848, "pitcher": "艾菩樂", "batter": "江坤宇", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 1, "outs": 2, "bases": [1, 1, 1], "sz_top": 0.93625, "sz_bottom": 0.47250000000000003, "favor_team": "中信兄弟", "is_correct": true}, {"x": 0.158788608, "z": 1.125553248, "impact": 0.0, "dist_cm": 15.240324799999987, "pitcher": "艾菩樂", "batter": "江坤宇", "count_b": 1, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 1, "outs": 2, "bases": [1, 1, 1], "sz_top": 0.93625, "sz_bottom": 0.47250000000000003, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.003255264, "z": 0.912019512, "impact": 0.0, "dist_cm": 6.113048800000005, "pitcher": "艾菩樂", "batter": "江坤宇", "count_b": 2, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 1, "outs": 2, "bases": [1, 1, 1], "sz_top": 0.93625, "sz_bottom": 0.47250000000000003, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.157877256, "z": 1.105704672, "impact": 0.0, "dist_cm": 10.045467200000006, "pitcher": "鄭浩均", "batter": "張趙紘", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 2, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.96835, "sz_bottom": 0.4887, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.244263672, "z": 0.3926768880000001, "impact": 0.0, "dist_cm": 4.652934129122747, "pitcher": "鄭浩均", "batter": "林子偉", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 2, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.93625, "sz_bottom": 0.47250000000000003, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.195257928, "z": 0.7428311280000001, "impact": 0.0, "dist_cm": 6.164207200000001, "pitcher": "鄭浩均", "batter": "林子偉", "count_b": 1, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 2, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.93625, "sz_bottom": 0.47250000000000003, "favor_team": "中信兄弟", "is_correct": true}, {"x": 0.3278703120000001, "z": 1.105918032, "impact": 0.0, "dist_cm": 16.415532893641583, "pitcher": "鄭浩均", "batter": "林子偉", "count_b": 1, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 2, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.93625, "sz_bottom": 0.47250000000000003, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.5369814, "z": 1.500536496, "impact": 0.0, "dist_cm": 61.03221083321536, "pitcher": "鄭浩均", "batter": "林子偉", "count_b": 2, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 2, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.93625, "sz_bottom": 0.47250000000000003, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.5087630160000001, "z": 0.447909696, "impact": 0.0, "dist_cm": 25.290814767743974, "pitcher": "鄭浩均", "batter": "林子偉", "count_b": 3, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 2, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.93625, "sz_bottom": 0.47250000000000003, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.09263481600000001, "z": 0.9473397360000001, "impact": 0.0, "dist_cm": 6.861026399999999, "pitcher": "鄭浩均", "batter": "陳佳樂", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 2, "outs": 1, "bases": [1, 0, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "中信兄弟", "is_correct": true}, {"x": 0.253282704, "z": 0.9230136480000001, "impact": 0.0, "dist_cm": 0.3617295999999978, "pitcher": "鄭浩均", "batter": "陳佳樂", "count_b": 0, "count_s": 1, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 2, "outs": 1, "bases": [1, 0, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.295677336, "z": 0.372438168, "impact": 0.0, "dist_cm": 10.63782626557606, "pitcher": "鄭浩均", "batter": "陳佳樂", "count_b": 0, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 2, "outs": 1, "bases": [1, 0, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.20607528, "z": 0.545564568, "impact": 0.0, "dist_cm": 5.082472, "pitcher": "艾菩樂", "batter": "許庭綸", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 2, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.9737000000000001, "sz_bottom": 0.49140000000000006, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.259296408, "z": 0.994931208, "impact": 0.0, "dist_cm": 0.7765108024516423, "pitcher": "艾菩樂", "batter": "許庭綸", "count_b": 0, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 2, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.9737000000000001, "sz_bottom": 0.49140000000000006, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.023564088, "z": 1.136623584, "impact": 0.0, "dist_cm": 17.417358399999998, "pitcher": "艾菩樂", "batter": "陳九登", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 2, "outs": 1, "bases": [0, 1, 0], "sz_top": 0.9255500000000001, "sz_bottom": 0.4671, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.460254096, "z": 0.746461296, "impact": 0.0, "dist_cm": 20.3354096, "pitcher": "艾菩樂", "batter": "陳九登", "count_b": 1, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 2, "outs": 1, "bases": [0, 1, 0], "sz_top": 0.9255500000000001, "sz_bottom": 0.4671, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.044098464, "z": 0.8590757520000001, "impact": 0.0, "dist_cm": 10.3374248, "pitcher": "艾菩樂", "batter": "陳九登", "count_b": 2, "count_s": 1, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 2, "outs": 1, "bases": [0, 1, 0], "sz_top": 0.9255500000000001, "sz_bottom": 0.4671, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.171611544, "z": 0.903802104, "impact": 0.0, "dist_cm": 8.5288456, "pitcher": "艾菩樂", "batter": "張士綸", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 2, "outs": 2, "bases": [0, 0, 1], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.255059688, "z": 1.420816056, "impact": 0.0, "dist_cm": 42.22565341515379, "pitcher": "艾菩樂", "batter": "張士綸", "count_b": 0, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 2, "outs": 2, "bases": [0, 0, 1], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.105564432, "z": 1.23846336, "impact": 0.0, "dist_cm": 23.856335999999985, "pitcher": "鄭浩均", "batter": "馬傑森", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 3, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.163930584, "z": 0.9513448080000001, "impact": 0.0, "dist_cm": 4.855519199999998, "pitcher": "鄭浩均", "batter": "馬傑森", "count_b": 1, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 3, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "中信兄弟", "is_correct": true}, {"x": 0.336709512, "z": 0.791891736, "impact": 0.0, "dist_cm": 7.980951199999999, "pitcher": "鄭浩均", "batter": "馬傑森", "count_b": 1, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 3, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.264328656, "z": 0.485906064, "impact": 0.0, "dist_cm": 0.7428755528871227, "pitcher": "鄭浩均", "batter": "馬傑森", "count_b": 2, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 3, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.036009072, "z": 0.620490504, "impact": 0.0, "dist_cm": 19.029050400000003, "pitcher": "鄭浩均", "batter": "林政華", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 3, "outs": 1, "bases": [0, 1, 0], "sz_top": 0.9255500000000001, "sz_bottom": 0.4671, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.3064885920000001, "z": 0.6125535120000001, "impact": 0.0, "dist_cm": 4.958859200000012, "pitcher": "鄭浩均", "batter": "林政華", "count_b": 0, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 3, "outs": 1, "bases": [0, 1, 0], "sz_top": 0.9255500000000001, "sz_bottom": 0.4671, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.442228224, "z": 1.193608992, "impact": 0.0, "dist_cm": 31.12967931131046, "pitcher": "鄭浩均", "batter": "林政華", "count_b": 1, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 3, "outs": 1, "bases": [0, 1, 0], "sz_top": 0.9255500000000001, "sz_bottom": 0.4671, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.7721498400000001, "z": 0.294903144, "impact": 0.0, "dist_cm": 54.14780796575113, "pitcher": "鄭浩均", "batter": "林政華", "count_b": 2, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 3, "outs": 1, "bases": [0, 1, 0], "sz_top": 0.9255500000000001, "sz_bottom": 0.4671, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.354753672, "z": 0.237887256, "impact": 0.0, "dist_cm": 22.89891387956513, "pitcher": "鄭浩均", "batter": "林政華", "count_b": 3, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 3, "outs": 1, "bases": [0, 1, 0], "sz_top": 0.9255500000000001, "sz_bottom": 0.4671, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.157563312, "z": 0.898483344, "impact": 0.0, "dist_cm": 9.9336688, "pitcher": "鄭浩均", "batter": "何品室融", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 3, "outs": 1, "bases": [1, 1, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "中信兄弟", "is_correct": true}, {"x": 0.132383784, "z": 0.508260096, "impact": 0.1577200807051078, "dist_cm": 5.106009599999996, "pitcher": "鄭浩均", "batter": "何品室融", "count_b": 0, "count_s": 1, "called": "BALL", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 3, "outs": 1, "bases": [1, 1, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "樂天桃猿", "is_correct": false, "type": "green"}, {"x": -0.03090672, "z": 0.4881128160000001, "impact": 0.17055945825950924, "dist_cm": 3.091281600000008, "pitcher": "鄭浩均", "batter": "何品室融", "count_b": 1, "count_s": 1, "called": "BALL", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 3, "outs": 1, "bases": [1, 1, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "樂天桃猿", "is_correct": false, "type": "green"}, {"x": -0.195779136, "z": 0.420889176, "impact": 0.0, "dist_cm": 3.631082400000006, "pitcher": "鄭浩均", "batter": "何品室融", "count_b": 2, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 3, "outs": 1, "bases": [1, 1, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.161339784, "z": 1.150577328, "impact": 0.0, "dist_cm": 15.067732799999995, "pitcher": "鄭浩均", "batter": "陳晨威", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 3, "outs": 2, "bases": [1, 1, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.158593536, "z": 1.109886528, "impact": 0.0, "dist_cm": 10.998652800000002, "pitcher": "鄭浩均", "batter": "陳晨威", "count_b": 1, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 3, "outs": 2, "bases": [1, 1, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.420313104, "z": 1.06099356, "impact": 0.0, "dist_cm": 18.609793146033525, "pitcher": "鄭浩均", "batter": "陳晨威", "count_b": 2, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 3, "outs": 2, "bases": [1, 1, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.04926177600000001, "z": 0.95947992, "impact": 0.0, "dist_cm": 4.042008000000004, "pitcher": "鄭浩均", "batter": "陳晨威", "count_b": 3, "count_s": 1, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 3, "outs": 2, "bases": [1, 1, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "中信兄弟", "is_correct": true}, {"x": 0.017077944, "z": 1.004172744, "impact": 0.0, "dist_cm": 0.6427256000000228, "pitcher": "艾菩樂", "batter": "岳政華", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 3, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9737000000000001, "sz_bottom": 0.49140000000000006, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.19360896, "z": 0.8760165360000001, "impact": 0.0, "dist_cm": 6.329104000000001, "pitcher": "艾菩樂", "batter": "岳政華", "count_b": 1, "count_s": 2, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 3, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9737000000000001, "sz_bottom": 0.49140000000000006, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.106381296, "z": 0.983449392, "impact": 0.0, "dist_cm": 3.2500608000000057, "pitcher": "艾菩樂", "batter": "詹子賢", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 3, "outs": 2, "bases": [0, 0, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.217203528, "z": 0.280809192, "impact": 0.0, "dist_cm": 17.639080800000006, "pitcher": "艾菩樂", "batter": "詹子賢", "count_b": 0, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 3, "outs": 2, "bases": [0, 0, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.5766694080000001, "z": 0.188445648, "impact": 0.0, "dist_cm": 43.282082080700924, "pitcher": "艾菩樂", "batter": "詹子賢", "count_b": 1, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 3, "outs": 2, "bases": [0, 0, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "中信兄弟", "is_correct": true}, {"x": 0.191005968, "z": 1.457047632, "impact": 0.0, "dist_cm": 44.1097632, "pitcher": "艾菩樂", "batter": "詹子賢", "count_b": 2, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 3, "outs": 2, "bases": [0, 0, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "中信兄弟", "is_correct": true}, {"x": 0.608719128, "z": 1.027377168, "impact": 0.0, "dist_cm": 35.90029447073874, "pitcher": "鄭浩均", "batter": "劉子杰", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 4, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9523, "sz_bottom": 0.4806, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.378787152, "z": 0.6497543520000001, "impact": 0.0, "dist_cm": 12.1887152, "pitcher": "鄭浩均", "batter": "劉子杰", "count_b": 1, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 4, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9523, "sz_bottom": 0.4806, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.447732912, "z": 1.029123672, "impact": 0.0, "dist_cm": 19.88026058752073, "pitcher": "鄭浩均", "batter": "張趙紘", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 4, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.96835, "sz_bottom": 0.4887, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.27145488, "z": 0.296878248, "impact": 0.0, "dist_cm": 16.170309467922173, "pitcher": "鄭浩均", "batter": "張趙紘", "count_b": 1, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 4, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.96835, "sz_bottom": 0.4887, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.341324184, "z": 0.517541256, "impact": 0.0, "dist_cm": 8.442418399999998, "pitcher": "鄭浩均", "batter": "林子偉", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 4, "outs": 1, "bases": [0, 1, 0], "sz_top": 0.93625, "sz_bottom": 0.47250000000000003, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.17946624, "z": 0.612428544, "impact": 0.0, "dist_cm": 7.7433760000000005, "pitcher": "鄭浩均", "batter": "林子偉", "count_b": 1, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 4, "outs": 1, "bases": [0, 1, 0], "sz_top": 0.93625, "sz_bottom": 0.47250000000000003, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.408008328, "z": 0.8895709920000001, "impact": 0.0, "dist_cm": 15.110832799999995, "pitcher": "鄭浩均", "batter": "馬傑森", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 4, "outs": 2, "bases": [1, 0, 1], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.215962992, "z": 0.038081712, "impact": 0.0, "dist_cm": 41.10182880000001, "pitcher": "鄭浩均", "batter": "馬傑森", "count_b": 1, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 4, "outs": 2, "bases": [1, 0, 1], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.318662304, "z": 1.231657176, "impact": 0.0, "dist_cm": 24.930085333011032, "pitcher": "鄭浩均", "batter": "馬傑森", "count_b": 2, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 4, "outs": 2, "bases": [1, 0, 1], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.307430424, "z": 1.348636368, "impact": 0.0, "dist_cm": 35.85231750480125, "pitcher": "鄭浩均", "batter": "馬傑森", "count_b": 3, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 4, "outs": 2, "bases": [1, 0, 1], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.540770064, "z": 0.585999336, "impact": 0.0, "dist_cm": 28.387006400000008, "pitcher": "鄭浩均", "batter": "嚴宏鈞", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 4, "outs": 2, "bases": [1, 1, 1], "sz_top": 0.88275, "sz_bottom": 0.4455, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.103080312, "z": 0.70414896, "impact": 0.0, "dist_cm": 15.381968800000001, "pitcher": "鄭浩均", "batter": "嚴宏鈞", "count_b": 1, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 4, "outs": 2, "bases": [1, 1, 1], "sz_top": 0.88275, "sz_bottom": 0.4455, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.7300569600000001, "z": 0.236247432, "impact": 0.0, "dist_cm": 51.441183522489, "pitcher": "鄭浩均", "batter": "嚴宏鈞", "count_b": 1, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 4, "outs": 2, "bases": [1, 1, 1], "sz_top": 0.88275, "sz_bottom": 0.4455, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.440033664, "z": 1.368774504, "impact": 0.0, "dist_cm": 49.66116041678107, "pitcher": "鄭浩均", "batter": "嚴宏鈞", "count_b": 2, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 4, "outs": 2, "bases": [1, 1, 1], "sz_top": 0.88275, "sz_bottom": 0.4455, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.25150572, "z": 0.800508432, "impact": 0.0, "dist_cm": 0.5394280000000016, "pitcher": "鄭浩均", "batter": "嚴宏鈞", "count_b": 3, "count_s": 1, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 4, "outs": 2, "bases": [1, 1, 1], "sz_top": 0.88275, "sz_bottom": 0.4455, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.347124528, "z": 0.50662332, "impact": 0.0, "dist_cm": 9.022452799999998, "pitcher": "鄭浩均", "batter": "嚴宏鈞", "count_b": 3, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 4, "outs": 2, "bases": [1, 1, 1], "sz_top": 0.88275, "sz_bottom": 0.4455, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.0412242, "z": 1.190222664, "impact": 0.0, "dist_cm": 17.42726639999999, "pitcher": "鄭浩均", "batter": "何品室融", "count_b": 0, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 4, "outs": 2, "bases": [0, 0, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.04273296, "z": 0.3562807200000001, "impact": 0.0, "dist_cm": 10.091927999999992, "pitcher": "鄭浩均", "batter": "何品室融", "count_b": 1, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 4, "outs": 2, "bases": [0, 0, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.008534400000000001, "z": 0.618061248, "impact": 0.0, "dist_cm": 16.89612479999999, "pitcher": "鄭浩均", "batter": "陳晨威", "count_b": 1, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 4, "outs": 2, "bases": [0, 1, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "中信兄弟", "is_correct": true}, {"x": 0.111681768, "z": 0.8236183680000001, "impact": 0.0, "dist_cm": 14.5218232, "pitcher": "艾菩樂", "batter": "許基宏", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 4, "outs": 0, "bases": [0, 0, 0], "sz_top": 1.01115, "sz_bottom": 0.5103, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.17931384, "z": 0.486198672, "impact": 0.0, "dist_cm": 5.059867199999997, "pitcher": "艾菩樂", "batter": "江坤宇", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 4, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.93625, "sz_bottom": 0.47250000000000003, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.335910936, "z": 0.988445064, "impact": 0.0, "dist_cm": 9.022068985951966, "pitcher": "艾菩樂", "batter": "江坤宇", "count_b": 0, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 4, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.93625, "sz_bottom": 0.47250000000000003, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.255074928, "z": 0.525225264, "impact": 0.06871775139549116, "dist_cm": 0.18250720000000248, "pitcher": "艾菩樂", "batter": "江坤宇", "count_b": 2, "count_s": 1, "called": "BALL", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 4, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.93625, "sz_bottom": 0.47250000000000003, "favor_team": "中信兄弟", "is_correct": false, "type": "green"}, {"x": -0.380356872, "z": 0.352748088, "impact": 0.0, "dist_cm": 16.32370700926746, "pitcher": "艾菩樂", "batter": "江坤宇", "count_b": 3, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 4, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.93625, "sz_bottom": 0.47250000000000003, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.296893488, "z": 0.6508089600000001, "impact": 0.0, "dist_cm": 3.999348799999998, "pitcher": "艾菩樂", "batter": "黃韋盛", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 4, "outs": 1, "bases": [1, 0, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "中信兄弟", "is_correct": true}, {"x": 0.178996848, "z": 0.9761890559999999, "impact": 0.0, "dist_cm": 3.9760944000000147, "pitcher": "艾菩樂", "batter": "黃韋盛", "count_b": 1, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 4, "outs": 1, "bases": [1, 0, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.054135528, "z": 1.01548692, "impact": 0.07030946973648664, "dist_cm": 0.48869199999999474, "pitcher": "艾菩樂", "batter": "許庭綸", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "BALL", "inning_half": "▼", "inning_num": 4, "outs": 2, "bases": [1, 0, 0], "sz_top": 0.9737000000000001, "sz_bottom": 0.49140000000000006, "favor_team": "樂天桃猿", "is_correct": false, "type": "red"}, {"x": -0.03980688, "z": 0.230395272, "impact": 0.0, "dist_cm": 22.410472800000008, "pitcher": "艾菩樂", "batter": "許庭綸", "count_b": 0, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 4, "outs": 2, "bases": [1, 0, 0], "sz_top": 0.9737000000000001, "sz_bottom": 0.49140000000000006, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.399553176, "z": 0.407203656, "impact": 0.0, "dist_cm": 16.141381029735, "pitcher": "艾菩樂", "batter": "許庭綸", "count_b": 1, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 4, "outs": 2, "bases": [1, 0, 0], "sz_top": 0.9737000000000001, "sz_bottom": 0.49140000000000006, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.4093524960000001, "z": 0.503511312, "impact": 0.0, "dist_cm": 15.24524960000001, "pitcher": "艾菩樂", "batter": "許庭綸", "count_b": 2, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 4, "outs": 2, "bases": [1, 0, 0], "sz_top": 0.9737000000000001, "sz_bottom": 0.49140000000000006, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.174037752, "z": 0.197181216, "impact": 0.0, "dist_cm": 25.731878400000006, "pitcher": "艾菩樂", "batter": "許庭綸", "count_b": 3, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 4, "outs": 2, "bases": [1, 0, 0], "sz_top": 0.9737000000000001, "sz_bottom": 0.49140000000000006, "favor_team": "中信兄弟", "is_correct": true}, {"x": 0.299280072, "z": 1.041565608, "impact": 0.0, "dist_cm": 10.361672895401037, "pitcher": "艾菩樂", "batter": "陳九登", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 4, "outs": 2, "bases": [1, 1, 0], "sz_top": 0.9255500000000001, "sz_bottom": 0.4671, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.047298864, "z": 0.5515599840000001, "impact": 0.0, "dist_cm": 12.135998400000005, "pitcher": "艾菩樂", "batter": "陳九登", "count_b": 1, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 4, "outs": 2, "bases": [1, 1, 0], "sz_top": 0.9255500000000001, "sz_bottom": 0.4671, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.302782224, "z": 0.8853586560000001, "impact": 0.1973187042123417, "dist_cm": 4.5882223999999985, "pitcher": "艾菩樂", "batter": "陳九登", "count_b": 1, "count_s": 1, "called": "STRIKE", "true_call": "BALL", "inning_half": "▼", "inning_num": 4, "outs": 2, "bases": [1, 1, 0], "sz_top": 0.9255500000000001, "sz_bottom": 0.4671, "favor_team": "樂天桃猿", "is_correct": false, "type": "red"}, {"x": -0.33738312, "z": 0.284762448, "impact": 0.0, "dist_cm": 17.995428225028693, "pitcher": "艾菩樂", "batter": "陳九登", "count_b": 1, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 4, "outs": 2, "bases": [1, 1, 0], "sz_top": 0.9255500000000001, "sz_bottom": 0.4671, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.54332124, "z": 0.3956121120000001, "impact": 0.0, "dist_cm": 29.423009885215535, "pitcher": "艾菩樂", "batter": "陳九登", "count_b": 2, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 4, "outs": 2, "bases": [1, 1, 0], "sz_top": 0.9255500000000001, "sz_bottom": 0.4671, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.383901696, "z": 0.805034712, "impact": 0.0, "dist_cm": 12.700169599999999, "pitcher": "艾菩樂", "batter": "張士綸", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 4, "outs": 2, "bases": [1, 0, 1], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.15063216, "z": 0.764319528, "impact": 0.0, "dist_cm": 10.626784000000002, "pitcher": "艾菩樂", "batter": "張士綸", "count_b": 1, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 4, "outs": 2, "bases": [1, 0, 1], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.225146616, "z": 0.8092409520000001, "impact": 0.0, "dist_cm": 3.175338400000001, "pitcher": "艾菩樂", "batter": "張士綸", "count_b": 1, "count_s": 1, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 4, "outs": 2, "bases": [1, 0, 1], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.217328496, "z": 0.6422044560000001, "impact": 0.0, "dist_cm": 3.9571503999999993, "pitcher": "艾菩樂", "batter": "岳政華", "count_b": 0, "count_s": 1, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 4, "outs": 2, "bases": [1, 1, 0], "sz_top": 0.9737000000000001, "sz_bottom": 0.49140000000000006, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.014032992, "z": 0.254824992, "impact": 0.0, "dist_cm": 19.96750080000001, "pitcher": "艾菩樂", "batter": "岳政華", "count_b": 0, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 4, "outs": 2, "bases": [1, 1, 0], "sz_top": 0.9737000000000001, "sz_bottom": 0.49140000000000006, "favor_team": "中信兄弟", "is_correct": true}, {"x": 0.5493806640000001, "z": 1.583503056, "impact": 0.0, "dist_cm": 67.50753645462883, "pitcher": "鄭浩均", "batter": "劉子杰", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 5, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9523, "sz_bottom": 0.4806, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.367348008, "z": 1.085182488, "impact": 0.0, "dist_cm": 16.151671068394975, "pitcher": "鄭浩均", "batter": "劉子杰", "count_b": 1, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 5, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9523, "sz_bottom": 0.4806, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.5441320080000001, "z": 1.51257, "impact": 0.0, "dist_cm": 61.03743093234213, "pitcher": "鄭浩均", "batter": "劉子杰", "count_b": 2, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 5, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9523, "sz_bottom": 0.4806, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.165372288, "z": 0.874340136, "impact": 0.0, "dist_cm": 9.1527712, "pitcher": "鄭浩均", "batter": "劉子杰", "count_b": 3, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 5, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9523, "sz_bottom": 0.4806, "favor_team": "中信兄弟", "is_correct": true}, {"x": 0.4502718960000001, "z": 1.092314808, "impact": 0.0, "dist_cm": 23.259822364296156, "pitcher": "鄭浩均", "batter": "劉子杰", "count_b": 3, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 5, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9523, "sz_bottom": 0.4806, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.011158728, "z": 0.85342476, "impact": 0.0, "dist_cm": 15.182524000000003, "pitcher": "蔡齊哲", "batter": "張趙紘", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 5, "outs": 0, "bases": [1, 0, 0], "sz_top": 0.96835, "sz_bottom": 0.4887, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.781144488, "z": 0.099459288, "impact": 0.0, "dist_cm": 64.602859677352, "pitcher": "蔡齊哲", "batter": "張趙紘", "count_b": 0, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 5, "outs": 0, "bases": [1, 0, 0], "sz_top": 0.96835, "sz_bottom": 0.4887, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.18550128, "z": 0.364406688, "impact": 0.0, "dist_cm": 8.739331200000004, "pitcher": "蔡齊哲", "batter": "張趙紘", "count_b": 1, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 5, "outs": 0, "bases": [0, 1, 0], "sz_top": 0.96835, "sz_bottom": 0.4887, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.112413288, "z": 0.7786420800000001, "impact": 0.0, "dist_cm": 14.448671200000001, "pitcher": "蔡齊哲", "batter": "張趙紘", "count_b": 2, "count_s": 2, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 5, "outs": 0, "bases": [0, 1, 0], "sz_top": 0.96835, "sz_bottom": 0.4887, "favor_team": "中信兄弟", "is_correct": true}, {"x": 0.185397648, "z": 0.899955528, "impact": 0.0, "dist_cm": 7.150235200000001, "pitcher": "蔡齊哲", "batter": "林子偉", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 5, "outs": 1, "bases": [0, 1, 0], "sz_top": 0.93625, "sz_bottom": 0.47250000000000003, "favor_team": "中信兄弟", "is_correct": true}, {"x": 0.363684312, "z": 0.82422492, "impact": 0.0, "dist_cm": 10.6784312, "pitcher": "蔡齊哲", "batter": "陳佳樂", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 5, "outs": 2, "bases": [0, 0, 1], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.17199864, "z": 0.671651184, "impact": 0.0, "dist_cm": 8.490136, "pitcher": "蔡齊哲", "batter": "陳佳樂", "count_b": 1, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 5, "outs": 2, "bases": [0, 0, 1], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.271323816, "z": 0.103409496, "impact": 0.0, "dist_cm": 35.714721037532534, "pitcher": "蔡齊哲", "batter": "陳佳樂", "count_b": 1, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 5, "outs": 2, "bases": [0, 0, 1], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.192444624, "z": 0.472269312, "impact": 0.0, "dist_cm": 2.3169311999999955, "pitcher": "蔡齊哲", "batter": "馬傑森", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 5, "outs": 2, "bases": [1, 0, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.509390904, "z": 0.336797904, "impact": 0.0, "dist_cm": 28.868925161732605, "pitcher": "蔡齊哲", "batter": "馬傑森", "count_b": 0, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 5, "outs": 2, "bases": [1, 0, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.31299912, "z": 0.839656944, "impact": 0.0, "dist_cm": 5.609912000000001, "pitcher": "艾菩樂", "batter": "王威晨", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 5, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9897500000000001, "sz_bottom": 0.49950000000000006, "favor_team": "中信兄弟", "is_correct": true}, {"x": 0.171413424, "z": 0.839788008, "impact": 0.0, "dist_cm": 8.5486576, "pitcher": "艾菩樂", "batter": "王威晨", "count_b": 1, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 5, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9897500000000001, "sz_bottom": 0.49950000000000006, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.368445288, "z": 0.584609448, "impact": 0.0, "dist_cm": 11.154528799999998, "pitcher": "艾菩樂", "batter": "王威晨", "count_b": 1, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 5, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9897500000000001, "sz_bottom": 0.49950000000000006, "favor_team": "中信兄弟", "is_correct": true}, {"x": 0.128299464, "z": 0.43810428, "impact": 0.0, "dist_cm": 3.529571999999996, "pitcher": "艾菩樂", "batter": "許基宏", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 5, "outs": 1, "bases": [1, 0, 0], "sz_top": 1.01115, "sz_bottom": 0.5103, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.4027810080000001, "z": 0.73292208, "impact": 0.0, "dist_cm": 14.588100800000008, "pitcher": "艾菩樂", "batter": "許基宏", "count_b": 1, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 5, "outs": 1, "bases": [1, 0, 0], "sz_top": 1.01115, "sz_bottom": 0.5103, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.226780344, "z": 0.107524296, "impact": 0.0, "dist_cm": 36.593277026261646, "pitcher": "艾菩樂", "batter": "許基宏", "count_b": 2, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 5, "outs": 1, "bases": [1, 0, 0], "sz_top": 1.01115, "sz_bottom": 0.5103, "favor_team": "中信兄弟", "is_correct": true}, {"x": 0.278989536, "z": 0.60095892, "impact": 0.0, "dist_cm": 2.208953599999998, "pitcher": "艾菩樂", "batter": "江坤宇", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 5, "outs": 2, "bases": [1, 0, 0], "sz_top": 0.93625, "sz_bottom": 0.47250000000000003, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.07502652, "z": 1.047533592, "impact": 0.0, "dist_cm": 12.788359199999993, "pitcher": "游竣宥", "batter": "嚴宏鈞", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 6, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.88275, "sz_bottom": 0.4455, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.118225824, "z": 0.7208489520000001, "impact": 0.0, "dist_cm": 13.867417600000001, "pitcher": "游竣宥", "batter": "嚴宏鈞", "count_b": 1, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 6, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.88275, "sz_bottom": 0.4455, "favor_team": "中信兄弟", "is_correct": true}, {"x": 0.066540888, "z": 0.8345424, "impact": 0.0, "dist_cm": 8.510760000000001, "pitcher": "游竣宥", "batter": "嚴宏鈞", "count_b": 1, "count_s": 1, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 6, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.88275, "sz_bottom": 0.4455, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.3120969120000001, "z": 1.082393568, "impact": 0.0, "dist_cm": 14.498388060217538, "pitcher": "游竣宥", "batter": "林政華", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 6, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.9255500000000001, "sz_bottom": 0.4671, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.070585584, "z": 0.448403472, "impact": 0.0, "dist_cm": 1.8203472000000012, "pitcher": "游竣宥", "batter": "林政華", "count_b": 1, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 6, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.9255500000000001, "sz_bottom": 0.4671, "favor_team": "中信兄弟", "is_correct": true}, {"x": 0.224985072, "z": 0.369579144, "impact": 0.0, "dist_cm": 6.074818635191294, "pitcher": "游竣宥", "batter": "林政華", "count_b": 1, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 6, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.9255500000000001, "sz_bottom": 0.4671, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.230099616, "z": 1.052852352, "impact": 0.0, "dist_cm": 9.080235341636943, "pitcher": "游竣宥", "batter": "林政華", "count_b": 2, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 6, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.9255500000000001, "sz_bottom": 0.4671, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.12310872, "z": 0.544080192, "impact": 0.0, "dist_cm": 8.688019199999998, "pitcher": "游竣宥", "batter": "何品室融", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 6, "outs": 1, "bases": [1, 0, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "中信兄弟", "is_correct": true}, {"x": 0.002923032, "z": 1.167938736, "impact": 0.0, "dist_cm": 16.803873599999992, "pitcher": "游竣宥", "batter": "陳晨威", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 6, "outs": 2, "bases": [1, 0, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.259558536, "z": 0.6426433680000001, "impact": 0.09767848998867198, "dist_cm": 0.2658536000000003, "pitcher": "游竣宥", "batter": "陳晨威", "count_b": 1, "count_s": 0, "called": "STRIKE", "true_call": "BALL", "inning_half": "▲", "inning_num": 6, "outs": 2, "bases": [1, 0, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "中信兄弟", "is_correct": false, "type": "red"}, {"x": -0.543080448, "z": 1.074590688, "impact": 0.0, "dist_cm": 30.490909515136376, "pitcher": "游竣宥", "batter": "陳晨威", "count_b": 1, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 6, "outs": 2, "bases": [1, 0, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.109654848, "z": 0.8097774000000001, "impact": 0.0, "dist_cm": 14.724515199999999, "pitcher": "游竣宥", "batter": "陳晨威", "count_b": 2, "count_s": 1, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 6, "outs": 2, "bases": [1, 0, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "中信兄弟", "is_correct": true}, {"x": 0.142728696, "z": 0.7624968240000001, "impact": 0.0, "dist_cm": 11.417130400000001, "pitcher": "艾菩樂", "batter": "黃韋盛", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 6, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.30888432, "z": 0.585587856, "impact": 0.0, "dist_cm": 5.198431999999999, "pitcher": "艾菩樂", "batter": "黃韋盛", "count_b": 0, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 6, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.094719648, "z": 0.320439288, "impact": 0.0, "dist_cm": 13.406071200000008, "pitcher": "艾菩樂", "batter": "許庭綸", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 6, "outs": 0, "bases": [1, 0, 0], "sz_top": 0.9737000000000001, "sz_bottom": 0.49140000000000006, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.100760784, "z": 1.159163544, "impact": 0.0, "dist_cm": 14.856354399999999, "pitcher": "艾菩樂", "batter": "岳政華", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 6, "outs": 2, "bases": [1, 1, 0], "sz_top": 0.9737000000000001, "sz_bottom": 0.49140000000000006, "favor_team": "中信兄弟", "is_correct": true}, {"x": 0.241246152, "z": 0.72281796, "impact": 0.0, "dist_cm": 1.5653848000000012, "pitcher": "蘇俊璋", "batter": "王威晨", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 6, "outs": 2, "bases": [0, 0, 0], "sz_top": 0.9897500000000001, "sz_bottom": 0.49950000000000006, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.028309824, "z": 0.5168341200000001, "impact": 0.07030946973648664, "dist_cm": 5.963412000000003, "pitcher": "蘇俊璋", "batter": "詹子賢", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 6, "outs": 2, "bases": [1, 0, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "中信兄弟", "is_correct": false, "type": "green"}, {"x": -0.168100248, "z": 0.518111232, "impact": 0.0, "dist_cm": 6.091123199999994, "pitcher": "蘇俊璋", "batter": "詹子賢", "count_b": 1, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 6, "outs": 2, "bases": [1, 0, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.31609284, "z": 1.393908312, "impact": 0.0, "dist_cm": 38.89418167990961, "pitcher": "蘇俊璋", "batter": "詹子賢", "count_b": 1, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 6, "outs": 2, "bases": [1, 0, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.305979576, "z": 0.5346649200000001, "impact": 0.0, "dist_cm": 4.907957599999997, "pitcher": "蘇俊璋", "batter": "詹子賢", "count_b": 2, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 6, "outs": 2, "bases": [1, 0, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "中信兄弟", "is_correct": true}, {"x": 0.399416016, "z": 0.7532430960000001, "impact": 0.0, "dist_cm": 14.251601599999997, "pitcher": "蘇俊璋", "batter": "許基宏", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 6, "outs": 2, "bases": [1, 1, 0], "sz_top": 1.01115, "sz_bottom": 0.5103, "favor_team": "中信兄弟", "is_correct": true}, {"x": 0.20449032, "z": 0.54060852, "impact": 0.1973187042123417, "dist_cm": 5.240968, "pitcher": "蘇俊璋", "batter": "許基宏", "count_b": 1, "count_s": 1, "called": "BALL", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 6, "outs": 2, "bases": [1, 1, 0], "sz_top": 1.01115, "sz_bottom": 0.5103, "favor_team": "中信兄弟", "is_correct": false, "type": "green"}, {"x": 0.027115008, "z": 1.328193432, "impact": 0.0, "dist_cm": 28.014343199999995, "pitcher": "蘇俊璋", "batter": "許基宏", "count_b": 2, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 6, "outs": 2, "bases": [1, 1, 0], "sz_top": 1.01115, "sz_bottom": 0.5103, "favor_team": "中信兄弟", "is_correct": true}, {"x": 0.326480424, "z": 0.873380016, "impact": 0.0, "dist_cm": 6.958042399999999, "pitcher": "蘇俊璋", "batter": "許基宏", "count_b": 3, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 6, "outs": 2, "bases": [1, 1, 0], "sz_top": 1.01115, "sz_bottom": 0.5103, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.358088184, "z": 0.797384232, "impact": 0.0, "dist_cm": 10.118818399999997, "pitcher": "莊昕諺", "batter": "江坤宇", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 6, "outs": 2, "bases": [1, 1, 1], "sz_top": 0.93625, "sz_bottom": 0.47250000000000003, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.023478744, "z": 0.5080314960000001, "impact": 0.0, "dist_cm": 6.4331496000000055, "pitcher": "李振昌", "batter": "劉子杰", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 7, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9523, "sz_bottom": 0.4806, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.23577804, "z": 0.53650896, "impact": 0.05949694307309794, "dist_cm": 2.112196000000001, "pitcher": "李振昌", "batter": "劉子杰", "count_b": 0, "count_s": 1, "called": "BALL", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 7, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9523, "sz_bottom": 0.4806, "favor_team": "樂天桃猿", "is_correct": false, "type": "green"}, {"x": -0.236430312, "z": 0.728109288, "impact": 0.0, "dist_cm": 2.0469688, "pitcher": "李振昌", "batter": "劉子杰", "count_b": 1, "count_s": 1, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 7, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9523, "sz_bottom": 0.4806, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.399294096, "z": 0.5044531440000001, "impact": 0.0, "dist_cm": 14.239409599999997, "pitcher": "李振昌", "batter": "劉子杰", "count_b": 1, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 7, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9523, "sz_bottom": 0.4806, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.107027472, "z": 0.544192968, "impact": 0.0, "dist_cm": 10.049296800000002, "pitcher": "李振昌", "batter": "劉子杰", "count_b": 2, "count_s": 2, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 7, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9523, "sz_bottom": 0.4806, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.3611575200000001, "z": 0.8287816800000001, "impact": 0.0, "dist_cm": 10.425752000000012, "pitcher": "李振昌", "batter": "張趙紘", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 7, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.96835, "sz_bottom": 0.4887, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.139135104, "z": 0.646395456, "impact": 0.0, "dist_cm": 11.7764896, "pitcher": "李振昌", "batter": "張趙紘", "count_b": 1, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 7, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.96835, "sz_bottom": 0.4887, "favor_team": "中信兄弟", "is_correct": true}, {"x": 0.07842808799999999, "z": 0.5414528160000001, "impact": 0.0, "dist_cm": 10.585281600000004, "pitcher": "李振昌", "batter": "林子偉", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 7, "outs": 2, "bases": [0, 0, 0], "sz_top": 0.93625, "sz_bottom": 0.47250000000000003, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.006531864000000001, "z": 0.5717286, "impact": 0.0, "dist_cm": 11.45286, "pitcher": "李振昌", "batter": "陳佳樂", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 7, "outs": 2, "bases": [0, 1, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.247150128, "z": 0.456063096, "impact": 0.0, "dist_cm": 0.983259586542997, "pitcher": "莊昕諺", "batter": "黃韋盛", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 7, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.3795887760000001, "z": 0.6200637840000001, "impact": 0.0, "dist_cm": 12.268877600000012, "pitcher": "莊昕諺", "batter": "黃韋盛", "count_b": 1, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 7, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.5323179600000001, "z": 0.412040832, "impact": 0.0, "dist_cm": 28.60182794321404, "pitcher": "莊昕諺", "batter": "黃韋盛", "count_b": 2, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 7, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.009171432, "z": 0.608865432, "impact": 0.0, "dist_cm": 15.166543199999992, "pitcher": "莊昕諺", "batter": "黃韋盛", "count_b": 3, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 7, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.16585692, "z": 0.149909784, "impact": 0.0, "dist_cm": 30.729021600000006, "pitcher": "莊昕諺", "batter": "黃韋盛", "count_b": 3, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 7, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.236552232, "z": 0.611675688, "impact": 0.0, "dist_cm": 2.0347768000000004, "pitcher": "莊昕諺", "batter": "許庭綸", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 7, "outs": 0, "bases": [1, 0, 0], "sz_top": 0.9737000000000001, "sz_bottom": 0.49140000000000006, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.05166055200000001, "z": 0.335017872, "impact": 0.0, "dist_cm": 11.948212800000006, "pitcher": "莊昕諺", "batter": "許庭綸", "count_b": 0, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 7, "outs": 0, "bases": [1, 0, 0], "sz_top": 0.9737000000000001, "sz_bottom": 0.49140000000000006, "favor_team": "中信兄弟", "is_correct": true}, {"x": 0.382246632, "z": 0.9443039280000001, "impact": 0.0, "dist_cm": 12.799846412253995, "pitcher": "莊昕諺", "batter": "張仁瑋", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 7, "outs": 1, "bases": [0, 1, 0], "sz_top": 0.91485, "sz_bottom": 0.4617, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.411842712, "z": 0.189119256, "impact": 0.0, "dist_cm": 29.642249871124584, "pitcher": "莊昕諺", "batter": "張仁瑋", "count_b": 1, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 7, "outs": 1, "bases": [0, 1, 0], "sz_top": 0.91485, "sz_bottom": 0.4617, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.482367336, "z": 0.696754512, "impact": 0.0, "dist_cm": 22.546733599999996, "pitcher": "莊昕諺", "batter": "張仁瑋", "count_b": 2, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 7, "outs": 1, "bases": [0, 1, 0], "sz_top": 0.91485, "sz_bottom": 0.4617, "favor_team": "中信兄弟", "is_correct": true}, {"x": 0.0451104, "z": 0.6031169040000001, "impact": 0.0, "dist_cm": 15.401690400000001, "pitcher": "王志煊", "batter": "張士綸", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 7, "outs": 2, "bases": [0, 1, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.303629568, "z": 1.282205208, "impact": 0.0, "dist_cm": 29.30785893935996, "pitcher": "王志煊", "batter": "張士綸", "count_b": 0, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 7, "outs": 2, "bases": [0, 1, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "中信兄弟", "is_correct": true}, {"x": 0.167676576, "z": 1.022960616, "impact": 0.0, "dist_cm": 2.3060615999999907, "pitcher": "王志煊", "batter": "張士綸", "count_b": 1, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 7, "outs": 2, "bases": [0, 1, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "中信兄弟", "is_correct": true}, {"x": 0.126805944, "z": 0.8406597360000001, "impact": 0.0, "dist_cm": 13.009405600000001, "pitcher": "王志煊", "batter": "張士綸", "count_b": 2, "count_s": 2, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 7, "outs": 2, "bases": [0, 1, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.04272076800000001, "z": 0.836468736, "impact": 0.0, "dist_cm": 16.343126400000003, "pitcher": "呂彥青", "batter": "馬傑森", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 8, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "中信兄弟", "is_correct": true}, {"x": 0.06423355200000001, "z": 0.69908928, "impact": 0.0, "dist_cm": 19.266644799999998, "pitcher": "呂彥青", "batter": "馬傑森", "count_b": 0, "count_s": 1, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 8, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "中信兄弟", "is_correct": true}, {"x": 0.234278424, "z": 0.201920856, "impact": 0.0, "dist_cm": 24.753774968821652, "pitcher": "呂彥青", "batter": "馬傑森", "count_b": 0, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 8, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.385605528, "z": 0.8363071920000001, "impact": 0.0, "dist_cm": 12.870552799999995, "pitcher": "呂彥青", "batter": "李勛傑", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 8, "outs": 1, "bases": [0, 0, 0], "sz_top": 1.00045, "sz_bottom": 0.5049, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.016090392, "z": 1.186086528, "impact": 0.0, "dist_cm": 14.873652799999986, "pitcher": "呂彥青", "batter": "李勛傑", "count_b": 1, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 8, "outs": 1, "bases": [0, 0, 0], "sz_top": 1.00045, "sz_bottom": 0.5049, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.204362304, "z": 1.042699464, "impact": 0.0, "dist_cm": 2.674946399999993, "pitcher": "呂彥青", "batter": "何品室融", "count_b": 0, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 8, "outs": 2, "bases": [1, 0, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.227109528, "z": 1.23027948, "impact": 0.0, "dist_cm": 21.97779596020141, "pitcher": "陳冠宇", "batter": "岳政華", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 8, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9737000000000001, "sz_bottom": 0.49140000000000006, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.09173870400000002, "z": 0.9952725840000001, "impact": 0.0, "dist_cm": 1.5327416000000051, "pitcher": "陳冠宇", "batter": "岳政華", "count_b": 1, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 8, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9737000000000001, "sz_bottom": 0.49140000000000006, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.139741656, "z": 0.5961735600000001, "impact": 0.0, "dist_cm": 11.7158344, "pitcher": "陳冠宇", "batter": "王威晨", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 8, "outs": 0, "bases": [0, 1, 0], "sz_top": 0.9897500000000001, "sz_bottom": 0.49950000000000006, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.542294064, "z": 0.9614123520000001, "impact": 0.0, "dist_cm": 28.539406400000004, "pitcher": "陳冠宇", "batter": "詹子賢", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 8, "outs": 1, "bases": [0, 0, 1], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.016706088, "z": 0.249045984, "impact": 0.0, "dist_cm": 20.815401600000005, "pitcher": "陳冠宇", "batter": "詹子賢", "count_b": 1, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 8, "outs": 1, "bases": [0, 0, 1], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "中信兄弟", "is_correct": true}, {"x": -0.021759672, "z": 0.6420977760000001, "impact": 0.0, "dist_cm": 18.4897776, "pitcher": "陳冠宇", "batter": "詹子賢", "count_b": 2, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 8, "outs": 1, "bases": [0, 0, 1], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.125967744, "z": 0.50104548, "impact": 0.03997289972899726, "dist_cm": 2.764548000000007, "pitcher": "陳冠宇", "batter": "許基宏", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 8, "outs": 2, "bases": [0, 0, 1], "sz_top": 1.01115, "sz_bottom": 0.5103, "favor_team": "中信兄弟", "is_correct": false, "type": "green"}, {"x": -0.08229600000000001, "z": 0.625547136, "impact": 0.0, "dist_cm": 15.214713600000001, "pitcher": "陳冠宇", "batter": "許基宏", "count_b": 1, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 8, "outs": 2, "bases": [0, 0, 1], "sz_top": 1.01115, "sz_bottom": 0.5103, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.164954712, "z": 0.10201656, "impact": 0.0, "dist_cm": 33.358344, "pitcher": "陳冠宇", "batter": "江坤宇", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 8, "outs": 2, "bases": [1, 0, 0], "sz_top": 0.93625, "sz_bottom": 0.47250000000000003, "favor_team": "中信兄弟", "is_correct": true}, {"x": 0.041471088, "z": 0.379695456, "impact": 0.0, "dist_cm": 5.590454400000004, "pitcher": "陳冠宇", "batter": "江坤宇", "count_b": 1, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 8, "outs": 2, "bases": [1, 0, 0], "sz_top": 0.93625, "sz_bottom": 0.47250000000000003, "favor_team": "中信兄弟", "is_correct": true}, {"x": 0.129536952, "z": 0.34232088, "impact": 0.0, "dist_cm": 9.327912000000003, "pitcher": "陳冠宇", "batter": "江坤宇", "count_b": 2, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 8, "outs": 2, "bases": [1, 0, 0], "sz_top": 0.93625, "sz_bottom": 0.47250000000000003, "favor_team": "中信兄弟", "is_correct": true}, {"x": 0.159514032, "z": 0.305086512, "impact": 0.0, "dist_cm": 13.051348800000007, "pitcher": "陳冠宇", "batter": "江坤宇", "count_b": 3, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 8, "outs": 2, "bases": [1, 0, 0], "sz_top": 0.93625, "sz_bottom": 0.47250000000000003, "favor_team": "中信兄弟", "is_correct": true}, {"x": 0.080906112, "z": 0.7010491440000001, "impact": 0.0, "dist_cm": 17.5993888, "pitcher": "陳冠宇", "batter": "黃韋盛", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 8, "outs": 2, "bases": [1, 1, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.163476432, "z": 0.136407144, "impact": 0.0, "dist_cm": 32.0792856, "pitcher": "陳冠宇", "batter": "黃韋盛", "count_b": 0, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 8, "outs": 2, "bases": [1, 1, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "中信兄弟", "is_correct": true}, {"x": 0.336736944, "z": 0.403360128, "impact": 0.0, "dist_cm": 11.095546477907241, "pitcher": "陳冠宇", "batter": "黃韋盛", "count_b": 1, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 8, "outs": 2, "bases": [1, 1, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "中信兄弟", "is_correct": true}, {"x": 0.236558328, "z": 0.766474464, "impact": 0.0, "dist_cm": 2.0341671999999993, "pitcher": "吳俊偉", "batter": "陳晨威", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 9, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "中信兄弟", "is_correct": true}, {"x": 0.161141664, "z": 1.013133864, "impact": 0.0, "dist_cm": 2.393386400000001, "pitcher": "吳俊偉", "batter": "林智平", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 9, "outs": 0, "bases": [1, 0, 0], "sz_top": 0.9523, "sz_bottom": 0.4806, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.147520152, "z": 1.12792764, "impact": 0.0, "dist_cm": 12.267763999999996, "pitcher": "吳俊偉", "batter": "張趙紘", "count_b": 0, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 9, "outs": 1, "bases": [1, 0, 0], "sz_top": 0.96835, "sz_bottom": 0.4887, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.5353507200000001, "z": 0.304269648, "impact": 0.0, "dist_cm": 32.84226400640431, "pitcher": "吳俊偉", "batter": "張趙紘", "count_b": 1, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 9, "outs": 1, "bases": [1, 0, 0], "sz_top": 0.96835, "sz_bottom": 0.4887, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.250268232, "z": 0.746586264, "impact": 0.0, "dist_cm": 0.6631768000000025, "pitcher": "吳俊偉", "batter": "林子偉", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 9, "outs": 2, "bases": [1, 0, 0], "sz_top": 0.93625, "sz_bottom": 0.47250000000000003, "favor_team": "中信兄弟", "is_correct": true}, {"x": 0.00230124, "z": 0.5232654, "impact": 0.07575081700138672, "dist_cm": 8.766539999999996, "pitcher": "吳俊偉", "batter": "林子偉", "count_b": 0, "count_s": 1, "called": "BALL", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 9, "outs": 2, "bases": [1, 0, 0], "sz_top": 0.93625, "sz_bottom": 0.47250000000000003, "favor_team": "樂天桃猿", "is_correct": false, "type": "green"}];
+            const svgW = 400;
+            const svgH = 450;
+            const xMin = -0.5;
+            const xMax = 0.5;
+            const zMin = 0.15;
+            const zMax = 1.25;
+            const SZ_BOTTOM = 0.486;
+            const SZ_TOP = 0.963;
+            const awayColor = "#BF0040";
+            const homeColor = "#FFD700";
+            const awayTeam = "樂天桃猿";
+            const homeTeam = "中信兄弟";
+            
+            let isShowAll = false;
+            let currentTolerance = 0;
+
+            function mapX(x) { return (xMax - x) / (xMax - xMin) * svgW; }
+            function mapZ(z) { return svgH - ((z - zMin) / (zMax - zMin) * svgH); }
+
+            function generateBaseSVG(bases) {
+                const b1 = bases[0] ? "#D32F2F" : "#fff";
+                const b2 = bases[1] ? "#D32F2F" : "#fff";
+                const b3 = bases[2] ? "#D32F2F" : "#fff";
+                return `
+                <svg width="24" height="24" viewBox="0 0 50 50" style="vertical-align: middle; margin: 0 5px;">
+                    <polygon points="25,5 35,15 25,25 15,15" fill="${b2}" stroke="#333" stroke-width="1.5"/>
+                    <polygon points="35,15 45,25 35,35 25,25" fill="${b1}" stroke="#333" stroke-width="1.5"/>
+                    <polygon points="15,15 25,25 15,35 5,25" fill="${b3}" stroke="#333" stroke-width="1.5"/>
+                </svg>`;
+            }
+
+            function updateDonut(idPrefix, percentage, subLabel) {
+                const circle = document.getElementById(idPrefix + '-circle');
+                const text = document.getElementById(idPrefix + '-text');
+                const sub = document.getElementById(idPrefix + '-sub');
+                
+                const radius = 60;
+                const circumference = 2 * 3.14159 * radius;
+                const offset = circumference - (percentage / 100) * circumference;
+                
+                if (circle) circle.setAttribute('stroke-dashoffset', offset);
+                if (text) text.textContent = percentage.toFixed(1) + '%';
+                if (subLabel && sub) sub.textContent = subLabel;
+            }
+
+            function updateFavor(favorVal) {
+                const circle = document.getElementById('favor-circle');
+                const text = document.getElementById('favor-text');
+                const sub = document.getElementById('favor-sub');
+                
+                const absVal = Math.abs(favorVal);
+                const team = favorVal >= 0 ? homeTeam : awayTeam;
+                const color = favorVal >= 0 ? homeColor : awayColor;
+                const sign = "+";
+                
+                if (circle) circle.setAttribute('fill', color);
+                if (text) text.textContent = sign + absVal.toFixed(2);
+                if (sub) {
+                    sub.textContent = team;
+                    sub.style.color = color;
+                }
+            }
+
+            function renderDots(tolerance, showAll) {
+                const container = document.getElementById('dots-container');
+                const tooltip = document.getElementById('tooltip');
+                const title = document.getElementById('plot-title-text');
+                container.innerHTML = '';
+                
+                title.innerText = showAll ? '所有判決球點' : '所有誤判球點';
+
+                const effectiveMissed = allCalls.filter(p => !p.is_correct && p.dist_cm >= tolerance);
+                effectiveMissed.sort((a, b) => b.impact - a.impact);
+
+                function drawPitch(p, isMissed) {
+                    const zNorm = SZ_BOTTOM + (p.z - p.sz_bottom) * (SZ_TOP - SZ_BOTTOM) / (p.sz_top - p.sz_bottom);
+                    const cx = mapX(p.x);
+                    const cy_val = mapZ(zNorm);
+                    
+                    const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                    circle.setAttribute("cx", cx);
+                    circle.setAttribute("cy", cy_val);
+                    circle.setAttribute("r", "14.76");
+                    circle.style.cursor = "pointer";
+                    
+                    if (!isMissed) {
+                        circle.setAttribute("fill", "transparent");
+                        circle.setAttribute("stroke", p.called === "STRIKE" ? "rgba(255, 128, 128, 0.8)" : "rgba(128, 200, 128, 0.8)");
+                        circle.setAttribute("stroke-width", "2");
+                        container.appendChild(circle);
+                    } else {
+                        const color = (p.called === "STRIKE") ? "rgba(255, 128, 128, 0.9)" : "rgba(128, 200, 128, 0.9)";
+                        circle.setAttribute("fill", color);
+                        
+                        circle.onmouseover = (e) => {
+                            const fColor = (p.favor_team === homeTeam) ? homeColor : awayColor;
+                            const calledLabel = p.called === 'STRIKE' ? '好球' : '壞球';
+                            tooltip.innerHTML = `
+                                <div class="context">
+                                    ${p.inning_half} ${p.inning_num} ${generateBaseSVG(p.bases)} ${p.outs} 出局 ${p.count_b}-${p.count_s}
+                                </div>
+                                <div class="players">
+                                    投手: ${p.pitcher}<br>
+                                    打者: ${p.batter}
+                                </div>
+                                <div class="call-result">
+                                    <span class="badge-cross">☒ ${p.dist_cm.toFixed(1)} cm</span>
+                                    <span class="badge-check">${calledLabel}</span>
+                                    <span class="run-impact" style="background-color: ${fColor};">+${p.impact.toFixed(2)} ${p.favor_team}</span>
+                                </div>
+                            `;
+                            tooltip.style.display = 'block';
+                        };
+                        circle.onmousemove = (e) => {
+                            tooltip.style.left = (e.pageX + 15) + 'px';
+                            tooltip.style.top = (e.pageY + 15) + 'px';
+                        };
+                        circle.onmouseout = () => { tooltip.style.display = 'none'; };
+                        
+                        const mIndex = effectiveMissed.indexOf(p);
+                        const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                        text.setAttribute("x", cx);
+                        text.setAttribute("y", cy_val + 4);
+                        text.setAttribute("text-anchor", "middle");
+                        text.setAttribute("font-size", "12");
+                        text.setAttribute("font-weight", "bold");
+                        text.setAttribute("fill", "#000");
+                        text.textContent = mIndex + 1;
+                        text.style.pointerEvents = "none";
+                        
+                        container.appendChild(circle);
+                        container.appendChild(text);
+                    }
+                }
+
+                if (showAll) {
+                    allCalls.forEach(p => {
+                        const isCorrect = p.is_correct || p.dist_cm < tolerance;
+                        if (isCorrect) drawPitch(p, false);
+                    });
+                }
+
+                const reverseMissed = [...effectiveMissed].reverse();
+                reverseMissed.forEach(p => {
+                    drawPitch(p, true);
+                });
+            }
+
+            function renderDetails(missed) {
+                const list = document.getElementById('missed-list');
+                list.innerHTML = '';
+                
+                missed.slice(0, 3).forEach((mc, i) => {
+                    const fColor = mc.favor_team === homeTeam ? homeColor : awayColor;
+                    const item = document.createElement('li');
+                    item.innerHTML = `
+                        <div class="rank">${i+1}:</div>
+                        <div class="content">
+                            <div class="context">
+                                ${mc.inning_half} ${mc.inning_num} ${generateBaseSVG(mc.bases)} ${mc.outs} 出局 ${mc.count_b}-${mc.count_s}
+                            </div>
+                            <div class="players">
+                                投手: ${mc.pitcher}<br>
+                                打者: ${mc.batter}
+                            </div>
+                            <div class="call-result">
+                                <span class="badge-cross">☒ ${mc.dist_cm.toFixed(1)} cm</span>
+                                <span class="badge-check">${mc.called === 'STRIKE' ? '好球' : '壞球'}</span>
+                                <span class="run-impact" style="background-color: ${fColor};">+${mc.impact.toFixed(2)} ${mc.favor_team}</span>
+                            </div>
+                        </div>
+                    `;
+                    list.appendChild(item);
+                });
+            }
+
+            function updateTolerance(val) {
+                currentTolerance = parseFloat(val);
+                document.getElementById('tolerance-val').innerText = currentTolerance.toFixed(1);
+                
+                const effectiveMissed = allCalls.filter(p => !p.is_correct && p.dist_cm >= currentTolerance);
+                effectiveMissed.sort((a, b) => b.impact - a.impact);
+
+                const effectiveCorrect = allCalls.filter(p => p.is_correct || p.dist_cm < currentTolerance);
+                
+                const total = allCalls.length;
+                const overallAcc = (effectiveCorrect.length / total) * 100;
+                
+                const trueBalls = allCalls.filter(p => p.true_call === 'BALL');
+                const ballCorrect = trueBalls.filter(p => p.called === 'BALL' || p.dist_cm < currentTolerance);
+                const ballAcc = trueBalls.length > 0 ? (ballCorrect.length / trueBalls.length) * 100 : 100;
+                
+                const trueStrikes = allCalls.filter(p => p.true_call === 'STRIKE');
+                const strikeCorrect = trueStrikes.filter(p => p.called === 'STRIKE' || p.dist_cm < currentTolerance);
+                const strikeAcc = trueStrikes.length > 0 ? (strikeCorrect.length / trueStrikes.length) * 100 : 100;
+                
+                let homeGain = 0;
+                let awayGain = 0;
+                effectiveMissed.forEach(p => {
+                    if (p.favor_team === homeTeam) homeGain += p.impact;
+                    else awayGain += p.impact;
+                });
+                const netFavor = homeGain - awayGain;
+                
+                const overallAccText = document.getElementById('overall-acc-text');
+                const overallSub = document.getElementById('overall-sub');
+                const overallCircle = document.getElementById('overall-circle');
+                if (overallAccText) overallAccText.textContent = overallAcc.toFixed(1) + '%';
+                if (overallSub) overallSub.textContent = `${effectiveCorrect.length}/${total}`;
+                if (overallCircle) {
+                    const radius = 60;
+                    const circumference = 2 * 3.14159 * radius;
+                    const offset = circumference - (overallAcc / 100) * circumference;
+                    overallCircle.setAttribute('stroke-dashoffset', offset);
+                }
+                
+                updateDonut('ball', ballAcc, `${ballCorrect.length}/${trueBalls.length}`);
+                updateDonut('strike', strikeAcc, `${strikeCorrect.length}/${trueStrikes.length}`);
+                updateFavor(netFavor);
+                
+                renderDots(currentTolerance, isShowAll);
+                renderDetails(effectiveMissed);
+            }
+
+            function showMissed() {
+                isShowAll = false;
+                document.getElementById('btn-missed').classList.add('active');
+                document.getElementById('btn-all').classList.remove('active');
+                renderDots(currentTolerance, false);
+            }
+
+            function showAll() {
+                isShowAll = true;
+                document.getElementById('btn-all').classList.add('active');
+                document.getElementById('btn-missed').classList.remove('active');
+                renderDots(currentTolerance, true);
+            }
+
+            window.onload = () => {
+                updateTolerance(0);
+            };
+        </script>
+            <div class="footer">
+                本報告為非官方自動化分析，僅供參考。數據來源：中華職棒進階數據網站公開資料
+            </div>
+        </div>
+    </body>
+</html>
+    
