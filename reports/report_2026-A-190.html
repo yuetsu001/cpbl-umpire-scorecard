@@ -1,0 +1,520 @@
+
+    <!DOCTYPE html>
+    <html lang="zh-TW">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=850">
+        <title>Umpire Scorecard - 吳家維</title>
+        <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+        <style>
+            body { font-family: 'Noto Sans TC', sans-serif; background-color: #e5e5e5; color: #111; margin: 0; padding: 40px 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; box-sizing: border-box; }
+            
+            /* Interactive Toolbar */
+            .toolbar { 
+                width: 850px; 
+                background: #fff; 
+                padding: 15px 25px; 
+                margin-bottom: 20px; 
+                box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
+                border-radius: 8px; 
+                display: flex; 
+                gap: 15px; 
+                align-items: center;
+                box-sizing: border-box;
+            }
+            .toolbar-title { font-weight: 900; color: #0b2447; margin-right: auto; }
+            .btn { 
+                padding: 8px 16px; 
+                border-radius: 6px; 
+                border: 1px solid #ddd; 
+                background: #f8f9fa; 
+                cursor: pointer; 
+                font-family: inherit; 
+                font-weight: 700; 
+                transition: all 0.2s;
+                font-size: 14px;
+            }
+            .btn:hover { background: #e9ecef; border-color: #ccc; }
+            .btn.active { background: #0b2447; color: #fff; border-color: #0b2447; }
+            
+            .slider-group { display: flex; align-items: center; gap: 10px; margin-left: 20px; border-left: 1px solid #ddd; padding-left: 20px; }
+            .slider-group label { font-weight: 700; font-size: 14px; color: #444; min-width: 120px; }
+            input[type=range] { width: 150px; cursor: pointer; }
+
+            .card { background: #fafafa; width: 850px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); overflow: hidden; position: relative; }
+            
+            /* Top Banner */
+            .banner { background-color: #0b2447; color: #fff; padding: 10px 20px; font-weight: 900; font-size: 24px; letter-spacing: 1px; display: flex; justify-content: space-between; }
+            .banner .league { color: #e4d804; }
+            
+            /* Header */
+            .header { text-align: center; padding: 20px 40px 10px; }
+            .header h1 { font-size: 44px; margin: 0; font-weight: 900; letter-spacing: -1px; }
+            .header-info { font-size: 20px; color: #444; margin-bottom: 15px; display: flex; justify-content: center; gap: 30px; font-weight: 700; }
+            
+            /* Match Info */
+            .match-info { display: flex; justify-content: center; align-items: center; gap: 0; margin-bottom: 20px; width: 100%; }
+            .team-box { width: 220px; padding: 10px 15px; border-radius: 8px; font-weight: 900; font-size: 22px; color: white; text-align: center; flex-shrink: 0; }
+            .score-box { font-size: 48px; font-weight: 900; display: flex; align-items: center; gap: 0; width: 200px; justify-content: center; flex-shrink: 0; }
+            .score-box .score { flex: 1; text-align: center; width: 70px; }
+            .score-box .hyphen { flex: 0; color: #888; }
+            .date-box { text-align: left; margin-left: 20px; border-left: 2px solid #ddd; padding-left: 20px; }
+            .date-box .title { color: #888; font-weight: bold; font-size: 16px; letter-spacing: 1px; text-transform: uppercase; }
+            .date-box .date { font-size: 28px; font-weight: 900; color: #333; }
+            
+            /* Metrics Row */
+            .stats-row { display: flex; justify-content: space-around; padding: 10px 10px; margin-bottom: 25px; flex-wrap: wrap; gap: 5px; }
+            .donut-container { margin-bottom: 10px; }
+            .donut-label { font-size: 18px; font-weight: 700; margin-bottom: 10px; color: #333; white-space: pre-line; height: 44px; display: flex; align-items: flex-end; justify-content: center; }
+            
+            /* Main Content Area */
+            .main-content { display: flex; justify-content: space-between; padding: 0 40px 10px; gap: 40px; }
+            
+            /* Footer */
+            .footer { background: #f0f0f0; padding: 15px 40px; border-top: 1px solid #eee; font-size: 12px; color: #888; text-align: center; }
+            
+            /* Plot Container */
+            .plot-container { flex: 1; text-align: center; }
+            .plot-title { font-size: 28px; font-weight: 900; margin-bottom: 5px; }
+            .plot-subtitle { font-size: 14px; color: #333; margin-bottom: 15px; font-weight: 700; }
+            .plot-subtitle span.red { color: #D32F2F; }
+            .zone-svg { background: #fafafa; }
+            
+            /* Details Container */
+            .details-container { flex: 1; }
+            .details-title { font-size: 28px; font-weight: 900; margin-bottom: 5px; text-align: center; }
+            .details-subtitle { font-size: 14px; color: #555; margin-bottom: 20px; font-weight: 700; text-align: center; }
+            
+            .missed-list { list-style-type: none; padding: 0; margin: 0; }
+            .missed-list li { margin-bottom: 20px; }
+            .missed-list .rank { font-size: 18px; font-weight: bold; float: left; width: 25px; }
+            .missed-list .content { margin-left: 25px; font-size: 16px; line-height: 1.5; }
+            .missed-list .context { font-weight: bold; display: flex; align-items: center; }
+            .missed-list .players { color: #444; }
+            .missed-list .call-result { margin-top: 5px; font-weight: 700; display: flex; align-items: center; gap: 5px; flex-wrap: nowrap; }
+            .badge-cross { border: 1px solid #333; padding: 2px 4px; border-radius: 4px; font-size: 11px; white-space: nowrap; }
+            .badge-check { border: 1px solid #333; padding: 2px 4px; border-radius: 4px; font-size: 11px; white-space: nowrap; }
+            .run-impact { background: #1976D2; color: white; padding: 2px 6px; border-radius: 4px; font-size: 14px; font-weight: 900; white-space: nowrap; }
+
+            /* Tooltip Styling */
+            .tooltip {
+                position: absolute;
+                background: #fff;
+                border: 1px solid #ccc;
+                border-radius: 8px;
+                padding: 12px;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+                pointer-events: none;
+                z-index: 1000;
+                display: none;
+                width: max-content;
+                min-width: 260px;
+                max-width: 320px;
+                font-family: 'Noto Sans TC', sans-serif;
+            }
+            .tooltip .context { font-weight: bold; display: flex; align-items: center; font-size: 14px; margin-bottom: 5px; }
+            .tooltip .players { color: #444; font-size: 13px; margin-bottom: 8px; line-height: 1.4; }
+            .tooltip .call-result { display: flex; align-items: center; gap: 5px; font-size: 12px; flex-wrap: nowrap; }
+            .tooltip .run-impact { color: white; padding: 2px 6px; border-radius: 4px; font-size: 13px; font-weight: 900; white-space: nowrap; }
+            .tooltip .badge-cross, .tooltip .badge-check { border: 1px solid #333; padding: 1px 4px; border-radius: 3px; }
+
+            /* Hide toolbar and tooltip for print/screenshot */
+            @media print {
+                .toolbar, .tooltip { display: none !important; }
+                body { padding: 0; }
+            }
+        </style>
+    
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-VN06NT1ZHE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-VN06NT1ZHE');
+    </script>
+</head>
+    <body>
+        <div id="tooltip" class="tooltip"></div>
+        <div class="toolbar">
+            <div class="toolbar-title">顯示方式</div>
+            <button id="btn-missed" class="btn active" onclick="showMissed()">僅顯示誤判</button>
+            <button id="btn-all" class="btn" onclick="showAll()">顯示所有判決</button>
+            
+            <div class="slider-group">
+                <label>容錯範圍: <span id="tolerance-val">0.0</span> cm</label>
+                <input type="range" id="tolerance-slider" min="0" max="10" step="0.1" value="0" oninput="updateTolerance(this.value)">
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="banner">
+                <span class="league">中華職棒 例行賽</span>
+            </div>
+            
+            <div class="header">
+                <h1>主審 吳家維 判決報告</h1>
+                <div class="header-info">
+                    <span>場次: 190</span>
+                    <span>日期: 2026-07-07</span>
+                    <span>球場: 新莊</span>
+                </div>
+                
+                <div class="match-info">
+                    <div class="team-box" style="background-color: #BF0040">樂天桃猿</div>
+                    <div class="score-box">
+                        <span class="score">5</span>
+                        <span class="hyphen">-</span>
+                        <span class="score">3</span>
+                    </div>
+                    <div class="team-box" style="background-color: #004A9C">富邦悍將</div>
+                </div>
+            </div>
+            
+            <div class="stats-row">
+                
+    <div class="donut-container" style="width: 140px; text-align: center;">
+        <div class="donut-label" style="height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; margin-bottom: 5px;">
+            <span style="font-size: 15px; font-weight: 700; line-height: 1.2; color: #333;">整體準確率</span>
+            <div style="width: 50px; height: 1px; background-color: #bbb; margin: 3px 0;"></div>
+            <span style="font-size: 13px; font-weight: 700; line-height: 1.2; color: #666;">平均誤差</span>
+        </div>
+        <svg width="140" height="140" viewBox="0 0 150 150">
+            <circle cx="75" cy="75" r="60" fill="transparent" stroke="#e0e0e0" stroke-width="15" />
+            <circle id="overall-circle" cx="75" cy="75" r="60" fill="transparent" stroke="#111" stroke-width="15" 
+                    stroke-dasharray="376.9908" stroke-dashoffset="22.439928571428595" 
+                    stroke-linecap="round" transform="rotate(-90 75 75)" />
+            <text id="overall-acc-text" x="75" y="65" text-anchor="middle" font-size="24" font-weight="900" fill="#111">94.0%</text>
+            <line x1="35" y1="78" x2="115" y2="78" stroke="#ccc" stroke-width="2" />
+            <text id="overall-rmse-text" x="75" y="105" text-anchor="middle" font-size="18" font-weight="700" fill="#555">0.9 cm</text>
+        </svg>
+        <div id="overall-sub" style="font-size: 14px; font-weight: bold; color: #555;">158/168</div>
+    </div>
+    
+                
+    <div class="donut-container" style="width: 140px; text-align: center;">
+        <div class="donut-label">壞球準確率</div>
+        <svg width="140" height="140" viewBox="0 0 150 150">
+            <circle cx="75" cy="75" r="60" fill="transparent" stroke="#e0e0e0" stroke-width="15" />
+            <circle id="ball-circle" cx="75" cy="75" r="60" fill="transparent" stroke="#4CAF50" stroke-width="15" 
+                    stroke-dasharray="376.9908" stroke-dashoffset="29.503627826086927" 
+                    stroke-linecap="round" transform="rotate(-90 75 75)" />
+            <text id="ball-text" x="75" y="85" text-anchor="middle" font-size="28" font-weight="900" fill="#111">92.2%</text>
+        </svg>
+        <div id="ball-sub" style="font-size: 14px; font-weight: bold; color: #555;">106/115</div>
+    </div>
+    
+                
+    <div class="donut-container" style="width: 140px; text-align: center;">
+        <div class="donut-label">好球準確率</div>
+        <svg width="140" height="140" viewBox="0 0 150 150">
+            <circle cx="75" cy="75" r="60" fill="transparent" stroke="#e0e0e0" stroke-width="15" />
+            <circle id="strike-circle" cx="75" cy="75" r="60" fill="transparent" stroke="#FF5252" stroke-width="15" 
+                    stroke-dasharray="376.9908" stroke-dashoffset="7.113033962264126" 
+                    stroke-linecap="round" transform="rotate(-90 75 75)" />
+            <text id="strike-text" x="75" y="85" text-anchor="middle" font-size="28" font-weight="900" fill="#111">98.1%</text>
+        </svg>
+        <div id="strike-sub" style="font-size: 14px; font-weight: bold; color: #555;">52/53</div>
+    </div>
+    
+                
+                
+    <div class="donut-container" style="width: 140px; text-align: center;">
+        <div class="donut-label">總體獲益</div>
+        <svg width="140" height="140" viewBox="0 0 150 150">
+            <circle id="favor-circle" cx="75" cy="75" r="67.5" fill="#004A9C" stroke="none" />
+            <text id="favor-text" x="75" y="85" text-anchor="middle" font-size="28" font-weight="900" fill="#fff">+0.84</text>
+        </svg>
+        <div id="favor-sub" style="font-size: 14px; font-weight: bold; color: #004A9C;">富邦悍將</div>
+    </div>
+    
+                
+                
+    <div class="donut-container" style="width: 140px; text-align: center;">
+        <div class="donut-label">判決一致性</div>
+        <svg width="140" height="140" viewBox="0 0 150 150">
+            <circle cx="75" cy="75" r="60" fill="transparent" stroke="#e0e0e0" stroke-width="15" />
+            <circle id="consistency-circle" cx="75" cy="75" r="60" fill="transparent" stroke="#111" stroke-width="15" 
+                    stroke-dasharray="376.9908" stroke-dashoffset="20.195935714285724" 
+                    stroke-linecap="round" transform="rotate(-90 75 75)" />
+            <text id="consistency-text" x="75" y="85" text-anchor="middle" font-size="28" font-weight="900" fill="#111">94.6%</text>
+        </svg>
+        <div id="consistency-sub" style="font-size: 14px; font-weight: bold; color: #555;">159/168</div>
+    </div>
+    
+            </div>
+            
+            <div class="main-content">
+                <div class="plot-container">
+                    <div id="plot-title-text" class="plot-title">所有誤判球點</div>
+                    <div class="plot-subtitle">正確好球帶與 <span class="red">主審估計好球帶</span> (捕手視角)</div>
+                    <svg class="zone-svg" width="400" height="450" viewBox="0 0 400 450">
+                        <!-- EUZ Blob -->
+                        <polygon points="147.1186440677966,345.5494774037017 138.98305084745766,346.2212871480242 130.84745762711867,347.1417567210246 122.71186440677968,348.3789777297485 114.57627118644069,349.7541758831372 106.4406779661017,350.9368565042356 98.30508474576271,351.55313636481134 90.16949152542372,351.2090641161663 82.03389830508479,349.4285448915454 73.8983050847458,345.5217807506467 73.14306543500173,344.9537750385208 65.76271186440681,337.4978948858539 63.75568222638594,334.5531587057011 59.7999254606272,324.1525423728814 58.67604961155588,313.7519260400616 59.45899915599191,303.35130970724197 61.50146670411327,292.9506933744222 64.20879412076843,282.55007704160244 65.76271186440681,276.58743957144156 66.92369440551917,272.1494607087828 69.08324386339422,261.748844375963 70.64344205720141,251.34822804314328 71.88249434400389,240.9476117103236 73.17606045873306,230.54699537750386 73.8983050847458,225.77309411246645 74.73094159285063,220.14637904468412 76.56197840817897,209.7457627118644 78.64482949886471,199.34514637904468 80.95907492395807,188.944530046225 82.03389830508479,184.6150146804099 83.59084209192744,178.54391371340523 86.85036672480429,168.14329738058552 90.16949152542372,160.06601995077568 91.18081367261719,157.7426810477658 96.7642165654266,147.3420647149461 98.30508474576271,144.86085954079346 103.52069274523458,136.9414483821264 106.4406779661017,132.6889854062839 110.96493798817649,126.54083204930669 114.57627118644069,121.38599980267037 118.66695355221408,116.14021571648686 122.71186440677968,110.53636927865074 126.94297838647601,105.73959938366721 130.84745762711867,101.23521433467482 138.3787384219707,95.3389830508475 138.98305084745766,94.90015432317784 147.1186440677966,91.55538772192688 155.25423728813558,90.55850687523753 163.38983050847457,91.13657352148857 171.52542372881356,92.65106547788645 179.66101694915255,94.52814438569499 183.61522433649787,95.3389830508475 187.79661016949154,96.27216973340552 195.93220338983053,97.30611387920987 204.06779661016952,97.11064722578186 212.2033898305085,95.52052279059211 212.7225431617254,95.3389830508475 220.33898305084745,93.05271926295404 228.47457627118644,89.98128106686494 236.61016949152543,86.67454937425833 240.8462000391866,84.93836671802774 244.74576271186442,83.49940528174676 252.8813559322034,80.68146614044986 261.0169491525424,78.21250240376071 269.1525423728813,76.13174919122184 277.0502897720408,74.53775038520803 277.2881355932204,74.4905609825123 285.4237288135593,73.40848880843004 293.5593220338983,73.03363628944157 301.6949152542373,73.53936676620879 306.816325885759,74.53775038520803 309.8305084745763,75.20871692865268 317.96610169491527,78.5304233201316 326.10169491525426,83.84971544522733 327.37160379072594,84.93836671802774 334.23728813559325,93.81851088471547 335.2265510336217,95.3389830508475 338.5804459751765,105.73959938366721 338.67527068631745,116.14021571648686 335.95049092114834,126.54083204930669 334.23728813559325,130.21462478220855 330.7937127425996,136.9414483821264 326.10169491525426,144.41830864368427 324.0068479552324,147.3420647149461 317.96610169491527,156.4540135285365 316.9788763458513,157.7426810477658 311.6970460061676,168.14329738058558 309.8669225402738,178.54391371340523 310.70759320224585,188.944530046225 312.7804014912454,199.34514637904468 314.95421605321116,209.7457627118644 316.6035439114402,220.14637904468412 317.42734245060797,230.54699537750386 317.24599031120897,240.9476117103236 315.8791970439009,251.34822804314328 313.0981580559907,261.748844375963 309.8305084745763,269.45540195669287 308.6422910516468,272.1494607087828 302.3669699226295,282.55007704160244 301.6949152542373,283.4675416309971 294.1404194908154,292.9506933744222 293.5593220338983,293.6066990756858 285.4237288135593,301.94553392649726 283.8569527430742,303.35130970724197 277.2881355932204,309.0402514256733 270.7513370825282,313.7519260400616 269.1525423728813,314.8836697651734 261.0169491525424,319.50256084148526 252.8813559322034,322.93223551344164 248.9783446433294,324.1525423728814 244.74576271186442,325.4567884347074 236.61016949152543,327.4024499458627 228.47457627118644,329.08451693713596 220.33898305084745,330.7641151076309 212.2033898305085,332.5758905092199 204.06779661016952,334.54431710491326 204.03374625084246,334.5531587057011 195.93220338983053,336.77254535100377 187.79661016949154,338.9394781649026 179.66101694915255,340.9196771929967 171.52542372881356,342.6062450601775 163.38983050847457,343.92366020284913 155.25423728813558,344.86658066928504 154.20015906914304,344.9537750385208 147.1186440677966,345.5494774037017" fill="rgba(255, 182, 193, 0.5)" />
+
+                        <!-- Strike Zone Box -->
+                        <rect x="112.00000000000001" y="117.40909090909093" width="176.0" height="195.13636363636363" fill="transparent" stroke="#111" stroke-width="2" />
+                        <!-- Pitches Container -->
+                        <g id="dots-container">
+                        </g>
+                    </svg>
+                </div>
+                <div class="details-container">
+                    <div class="details-title">關鍵判決</div>
+                    <div class="details-subtitle">對得分期望值影響最大的判決</div>
+                    <ul id="missed-list" class="missed-list"></ul>
+                </div>
+            </div>
+            
+            <script>
+            const allCalls = [{"x": -0.542351976, "z": 1.336477896, "impact": 0.0, "dist_cm": 44.84025842268836, "pitcher": "陳品宏", "batter": "林立", "content": "壞球。", "count_b": 0, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 1, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9737000000000001, "sz_bottom": 0.49140000000000006, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.159712152, "z": 1.008470424, "impact": 0.0, "dist_cm": 0.8570423999999897, "pitcher": "陳品宏", "batter": "陳晨威", "content": "壞球。", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 1, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.021704808, "z": 0.54647592, "impact": 0.0, "dist_cm": 9.737591999999996, "pitcher": "陳品宏", "batter": "陳晨威", "content": "好球沒揮棒。", "count_b": 1, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 1, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "富邦悍將", "is_correct": true}, {"x": 0.11782044, "z": 0.735424488, "impact": 0.0, "dist_cm": 13.907955999999999, "pitcher": "陳品宏", "batter": "陳晨威", "content": "好球沒揮棒。 打者出局-三振出局。 2人出局。", "count_b": 1, "count_s": 2, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 1, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.069375528, "z": 0.820134504, "impact": 0.0, "dist_cm": 16.906549600000005, "pitcher": "陳品宏", "batter": "林智平", "content": "好球沒揮棒。", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 1, "outs": 2, "bases": [0, 0, 0], "sz_top": 0.9523, "sz_bottom": 0.4806, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.01822704, "z": 1.19083836, "impact": 0.0, "dist_cm": 20.163836000000007, "pitcher": "陳品宏", "batter": "林智平", "content": "壞球。", "count_b": 0, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 1, "outs": 2, "bases": [0, 0, 0], "sz_top": 0.9523, "sz_bottom": 0.4806, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.158203392, "z": 1.052407344, "impact": 0.028837125144361306, "dist_cm": 6.320734399999988, "pitcher": "陳品宏", "batter": "林智平", "content": "好球沒揮棒。", "count_b": 1, "count_s": 1, "called": "STRIKE", "true_call": "BALL", "inning_half": "▲", "inning_num": 1, "outs": 2, "bases": [0, 0, 0], "sz_top": 0.9523, "sz_bottom": 0.4806, "favor_team": "富邦悍將", "is_correct": false, "type": "red"}, {"x": 0.115820952, "z": -0.010152888, "impact": 0.0, "dist_cm": 45.385288800000005, "pitcher": "陳品宏", "batter": "林智平", "content": "壞球。", "count_b": 1, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 1, "outs": 2, "bases": [0, 0, 0], "sz_top": 0.9523, "sz_bottom": 0.4806, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.251737368, "z": 0.507900432, "impact": 0.0, "dist_cm": 0.5162631999999987, "pitcher": "艾菩樂", "batter": "孔念恩", "content": "好球沒揮棒。", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 1, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9844, "sz_bottom": 0.4968000000000001, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.45052488, "z": 0.3675613680000001, "impact": 0.0, "dist_cm": 22.738080577341563, "pitcher": "艾菩樂", "batter": "孔念恩", "content": "壞球。", "count_b": 0, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 1, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9844, "sz_bottom": 0.4968000000000001, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.3575304, "z": 0.4248180480000001, "impact": 0.0, "dist_cm": 11.959921686286581, "pitcher": "艾菩樂", "batter": "張育成", "content": "壞球。", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 1, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.9897500000000001, "sz_bottom": 0.49950000000000006, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.271979136, "z": 0.304217832, "impact": 0.0, "dist_cm": 15.996814954097255, "pitcher": "艾菩樂", "batter": "范國宸", "content": "壞球。", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 1, "outs": 2, "bases": [0, 0, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.342436704, "z": 0.8910736560000001, "impact": 0.0, "dist_cm": 8.553670399999998, "pitcher": "艾菩樂", "batter": "范國宸", "content": "壞球。", "count_b": 1, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 1, "outs": 2, "bases": [0, 0, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.267404088, "z": 0.5769864, "impact": 0.06552085150933519, "dist_cm": 1.050408799999998, "pitcher": "艾菩樂", "batter": "范國宸", "content": "好球沒揮棒。", "count_b": 2, "count_s": 0, "called": "STRIKE", "true_call": "BALL", "inning_half": "▼", "inning_num": 1, "outs": 2, "bases": [0, 0, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "樂天桃猿", "is_correct": false, "type": "red"}, {"x": 0.120216168, "z": 0.378113544, "impact": 0.0, "dist_cm": 7.908645600000002, "pitcher": "艾菩樂", "batter": "范國宸", "content": "壞球。", "count_b": 2, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 1, "outs": 2, "bases": [0, 0, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.339434424, "z": 0.662815032, "impact": 0.0, "dist_cm": 8.2534424, "pitcher": "艾菩樂", "batter": "范國宸", "content": "壞球。四壞球上壘。", "count_b": 3, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 1, "outs": 2, "bases": [0, 0, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.15966948, "z": 0.9699772320000001, "impact": 0.0, "dist_cm": 3.527276799999997, "pitcher": "陳品宏", "batter": "林泓育", "content": "好球沒揮棒。", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 2, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.96835, "sz_bottom": 0.4887, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.4515733920000001, "z": 1.109758512, "impact": 0.0, "dist_cm": 23.4434854282379, "pitcher": "陳品宏", "batter": "林泓育", "content": "壞球。", "count_b": 0, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 2, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.96835, "sz_bottom": 0.4887, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.335084928, "z": 0.9332427360000001, "impact": 0.1986181800090209, "dist_cm": 7.8184928000000005, "pitcher": "陳品宏", "batter": "林泓育", "content": "好球沒揮棒。 打者出局-三振出局。 1人出局。", "count_b": 1, "count_s": 2, "called": "STRIKE", "true_call": "BALL", "inning_half": "▲", "inning_num": 2, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.96835, "sz_bottom": 0.4887, "favor_team": "富邦悍將", "is_correct": false, "type": "red"}, {"x": 0.07652613600000001, "z": 0.9972324480000001, "impact": 0.0, "dist_cm": 4.011755199999996, "pitcher": "陳品宏", "batter": "李勛傑", "content": "好球沒揮棒。", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 2, "outs": 1, "bases": [0, 0, 0], "sz_top": 1.00045, "sz_bottom": 0.5049, "favor_team": "富邦悍將", "is_correct": true}, {"x": 0.037664136, "z": 0.628064784, "impact": 0.0, "dist_cm": 19.246478399999994, "pitcher": "陳品宏", "batter": "林子偉", "content": "好球沒揮棒。", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 2, "outs": 2, "bases": [0, 0, 0], "sz_top": 0.93625, "sz_bottom": 0.47250000000000003, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.377321064, "z": 0.378357384, "impact": 0.0, "dist_cm": 15.072587695895134, "pitcher": "陳品宏", "batter": "劉子杰", "content": "壞球。", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 2, "outs": 2, "bases": [1, 0, 0], "sz_top": 0.9523, "sz_bottom": 0.4806, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.18085308, "z": 0.627860568, "impact": 0.0, "dist_cm": 7.604692, "pitcher": "陳品宏", "batter": "劉子杰", "content": "好球沒揮棒。", "count_b": 1, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 2, "outs": 2, "bases": [1, 0, 0], "sz_top": 0.9523, "sz_bottom": 0.4806, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.542038032, "z": 1.10811564, "impact": 0.0, "dist_cm": 32.085271868015575, "pitcher": "陳品宏", "batter": "劉子杰", "content": "壞球。", "count_b": 1, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 2, "outs": 2, "bases": [1, 0, 0], "sz_top": 0.9523, "sz_bottom": 0.4806, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.017730216, "z": 1.100812632, "impact": 0.0, "dist_cm": 11.696263199999994, "pitcher": "艾菩樂", "batter": "林澤彬", "content": "壞球。", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 2, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9469500000000001, "sz_bottom": 0.47790000000000005, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.207651096, "z": 0.765194304, "impact": 0.0, "dist_cm": 4.9248904, "pitcher": "艾菩樂", "batter": "林澤彬", "content": "好球沒揮棒。", "count_b": 1, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 2, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9469500000000001, "sz_bottom": 0.47790000000000005, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.252097032, "z": 0.27285696, "impact": 0.0, "dist_cm": 17.064003882540508, "pitcher": "艾菩樂", "batter": "林澤彬", "content": "壞球。", "count_b": 1, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 2, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9469500000000001, "sz_bottom": 0.47790000000000005, "favor_team": "富邦悍將", "is_correct": true}, {"x": 0.341052912, "z": 0.915046176, "impact": 0.0, "dist_cm": 8.415291199999999, "pitcher": "艾菩樂", "batter": "林澤彬", "content": "壞球。", "count_b": 2, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 2, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9469500000000001, "sz_bottom": 0.47790000000000005, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.331518768, "z": 0.712905864, "impact": 0.0, "dist_cm": 7.4618768000000015, "pitcher": "艾菩樂", "batter": "董子恩", "content": "壞球。", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 2, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.9737000000000001, "sz_bottom": 0.49140000000000006, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.1597914, "z": 0.705462648, "impact": 0.0, "dist_cm": 9.71086, "pitcher": "艾菩樂", "batter": "申皓瑋", "content": "好球沒揮棒。", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 2, "outs": 2, "bases": [0, 0, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.065275968, "z": 0.249186192, "impact": 0.0, "dist_cm": 20.801380800000004, "pitcher": "艾菩樂", "batter": "申皓瑋", "content": "壞球。", "count_b": 0, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 2, "outs": 2, "bases": [0, 0, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.205950312, "z": 0.9798740880000001, "impact": 0.0, "dist_cm": 2.0025911999999995, "pitcher": "陳品宏", "batter": "馬傑森", "content": "好球沒揮棒。", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 3, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "富邦悍將", "is_correct": true}, {"x": 0.023686008, "z": 0.738189024, "impact": 0.0, "dist_cm": 23.3213992, "pitcher": "陳品宏", "batter": "馬傑森", "content": "好球沒揮棒。", "count_b": 0, "count_s": 1, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 3, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.162306, "z": 1.05351072, "impact": 0.0, "dist_cm": 4.291071999999989, "pitcher": "陳品宏", "batter": "林立", "content": "壞球。", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 3, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.9737000000000001, "sz_bottom": 0.49140000000000006, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.26773632, "z": 0.504806712, "impact": 0.06486291816886106, "dist_cm": 1.0836320000000024, "pitcher": "陳品宏", "batter": "林立", "content": "好球沒揮棒。", "count_b": 1, "count_s": 0, "called": "STRIKE", "true_call": "BALL", "inning_half": "▲", "inning_num": 3, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.9737000000000001, "sz_bottom": 0.49140000000000006, "favor_team": "富邦悍將", "is_correct": false, "type": "red"}, {"x": -0.332271624, "z": 1.336279776, "impact": 0.0, "dist_cm": 34.26642389896702, "pitcher": "陳品宏", "batter": "林立", "content": "壞球。", "count_b": 1, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 3, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.9737000000000001, "sz_bottom": 0.49140000000000006, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.04146194400000001, "z": 0.346956888, "impact": 0.0, "dist_cm": 10.754311200000004, "pitcher": "陳品宏", "batter": "林立", "content": "壞球。", "count_b": 2, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 3, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.9737000000000001, "sz_bottom": 0.49140000000000006, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.162388296, "z": 0.704822568, "impact": 0.0, "dist_cm": 9.451170400000002, "pitcher": "陳品宏", "batter": "陳晨威", "content": "好球沒揮棒。", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 3, "outs": 2, "bases": [0, 0, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.280940256, "z": 0.762722376, "impact": 0.03997289972899726, "dist_cm": 2.4040255999999998, "pitcher": "陳品宏", "batter": "林智平", "content": "好球沒揮棒。", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "BALL", "inning_half": "▲", "inning_num": 3, "outs": 2, "bases": [0, 0, 1], "sz_top": 0.9523, "sz_bottom": 0.4806, "favor_team": "富邦悍將", "is_correct": false, "type": "red"}, {"x": -0.5695553760000001, "z": 1.038904704, "impact": 0.0, "dist_cm": 32.322405591050014, "pitcher": "陳品宏", "batter": "林智平", "content": "壞球。", "count_b": 0, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 3, "outs": 2, "bases": [0, 0, 1], "sz_top": 0.9523, "sz_bottom": 0.4806, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.234427776, "z": 0.657526752, "impact": 0.0, "dist_cm": 2.2472224, "pitcher": "陳品宏", "batter": "林智平", "content": "好球沒揮棒。", "count_b": 1, "count_s": 1, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 3, "outs": 2, "bases": [0, 0, 1], "sz_top": 0.9523, "sz_bottom": 0.4806, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.1224534, "z": 0.16747236, "impact": 0.0, "dist_cm": 27.622764000000004, "pitcher": "陳品宏", "batter": "林智平", "content": "壞球。", "count_b": 1, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 3, "outs": 2, "bases": [0, 0, 1], "sz_top": 0.9523, "sz_bottom": 0.4806, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.315647832, "z": 0.38308788, "impact": 0.0, "dist_cm": 9.969107332909656, "pitcher": "陳品宏", "batter": "林智平", "content": "壞球。", "count_b": 2, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 3, "outs": 2, "bases": [0, 0, 1], "sz_top": 0.9523, "sz_bottom": 0.4806, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.098813112, "z": 0.700113408, "impact": 0.0, "dist_cm": 15.8086888, "pitcher": "艾菩樂", "batter": "林岱安", "content": "好球沒揮棒。", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 3, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.93625, "sz_bottom": 0.47250000000000003, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.040318944, "z": 0.5219882880000001, "impact": 0.0, "dist_cm": 8.638828800000004, "pitcher": "艾菩樂", "batter": "林岱安", "content": "好球沒揮棒。", "count_b": 0, "count_s": 1, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 3, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.93625, "sz_bottom": 0.47250000000000003, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.07199071200000001, "z": 0.4852507440000001, "impact": 0.0, "dist_cm": 3.8850744000000064, "pitcher": "艾菩樂", "batter": "劉俊豪", "content": "好球沒揮棒。", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 3, "outs": 0, "bases": [1, 0, 0], "sz_top": 0.9576500000000001, "sz_bottom": 0.48330000000000006, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.25036272, "z": 0.8574328800000001, "impact": 0.0, "dist_cm": 0.6537280000000021, "pitcher": "艾菩樂", "batter": "孔念恩", "content": "好球沒揮棒。", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 3, "outs": 2, "bases": [0, 0, 0], "sz_top": 0.9844, "sz_bottom": 0.4968000000000001, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.385596384, "z": 0.377382024, "impact": 0.0, "dist_cm": 16.885461709573384, "pitcher": "艾菩樂", "batter": "張育成", "content": "壞球。 一壘跑者孔念恩出局-盜壘刺 3人出局。", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 3, "outs": 2, "bases": [1, 0, 0], "sz_top": 0.9897500000000001, "sz_bottom": 0.49950000000000006, "favor_team": "富邦悍將", "is_correct": true}, {"x": 0.06765950400000001, "z": 0.709684128, "impact": 0.0, "dist_cm": 18.924049599999996, "pitcher": "陳品宏", "batter": "林泓育", "content": "好球沒揮棒。", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 4, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.96835, "sz_bottom": 0.4887, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.594107016, "z": 0.809515272, "impact": 0.0, "dist_cm": 33.720701600000005, "pitcher": "陳品宏", "batter": "林泓育", "content": "壞球。", "count_b": 0, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 4, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.96835, "sz_bottom": 0.4887, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.004050792, "z": 1.068074064, "impact": 0.0, "dist_cm": 3.072406399999987, "pitcher": "陳品宏", "batter": "李勛傑", "content": "壞球。", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 4, "outs": 0, "bases": [1, 0, 0], "sz_top": 1.00045, "sz_bottom": 0.5049, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.136757664, "z": 1.116485448, "impact": 0.0, "dist_cm": 7.913544799999987, "pitcher": "陳品宏", "batter": "李勛傑", "content": "壞球。", "count_b": 1, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 4, "outs": 0, "bases": [1, 0, 0], "sz_top": 1.00045, "sz_bottom": 0.5049, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.067629024, "z": -0.052614576, "impact": 0.0, "dist_cm": 52.0614576, "pitcher": "陳品宏", "batter": "李勛傑", "content": "壞球。", "count_b": 2, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 4, "outs": 0, "bases": [1, 0, 0], "sz_top": 1.00045, "sz_bottom": 0.5049, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.0771906, "z": 1.028139168, "impact": 0.0, "dist_cm": 5.498916800000002, "pitcher": "陳品宏", "batter": "林子偉", "content": "壞球。", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 4, "outs": 2, "bases": [0, 0, 0], "sz_top": 0.93625, "sz_bottom": 0.47250000000000003, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.115866672, "z": 0.934644816, "impact": 0.0, "dist_cm": 3.8505183999999986, "pitcher": "陳品宏", "batter": "林子偉", "content": "好球沒揮棒。", "count_b": 1, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 4, "outs": 2, "bases": [0, 0, 0], "sz_top": 0.93625, "sz_bottom": 0.47250000000000003, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.277282656, "z": 1.240874328, "impact": 0.0, "dist_cm": 27.306335894403063, "pitcher": "陳品宏", "batter": "林子偉", "content": "壞球。", "count_b": 1, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 4, "outs": 2, "bases": [0, 0, 0], "sz_top": 0.93625, "sz_bottom": 0.47250000000000003, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.155978352, "z": 1.16116608, "impact": 0.0, "dist_cm": 18.80160800000001, "pitcher": "陳品宏", "batter": "林子偉", "content": "壞球。", "count_b": 2, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 4, "outs": 2, "bases": [0, 0, 0], "sz_top": 0.93625, "sz_bottom": 0.47250000000000003, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.06661099200000001, "z": 1.147745736, "impact": 0.0, "dist_cm": 15.854573600000005, "pitcher": "陳品宏", "batter": "劉子杰", "content": "壞球。", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 4, "outs": 2, "bases": [1, 0, 0], "sz_top": 0.9523, "sz_bottom": 0.4806, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.21332952, "z": 0.356680008, "impact": 0.0, "dist_cm": 8.701999200000003, "pitcher": "陳品宏", "batter": "劉子杰", "content": "壞球。", "count_b": 1, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 4, "outs": 2, "bases": [1, 0, 0], "sz_top": 0.9523, "sz_bottom": 0.4806, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.01456944, "z": 0.553315632, "impact": 0.0, "dist_cm": 9.071563199999995, "pitcher": "艾菩樂", "batter": "張育成", "content": "好球沒揮棒。", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 4, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9897500000000001, "sz_bottom": 0.49950000000000006, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.018406872, "z": 0.391116312, "impact": 0.0, "dist_cm": 7.148368800000003, "pitcher": "艾菩樂", "batter": "張育成", "content": "壞球。", "count_b": 0, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 4, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9897500000000001, "sz_bottom": 0.49950000000000006, "favor_team": "富邦悍將", "is_correct": true}, {"x": 0.443459616, "z": 0.6944227920000001, "impact": 0.0, "dist_cm": 18.655961599999998, "pitcher": "艾菩樂", "batter": "張育成", "content": "壞球。", "count_b": 1, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 4, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9897500000000001, "sz_bottom": 0.49950000000000006, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.492349536, "z": 0.6691975440000001, "impact": 0.0, "dist_cm": 23.544953600000003, "pitcher": "艾菩樂", "batter": "張育成", "content": "壞球。", "count_b": 2, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 4, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9897500000000001, "sz_bottom": 0.49950000000000006, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.3827282160000001, "z": 0.868326432, "impact": 0.0, "dist_cm": 12.58282160000001, "pitcher": "艾菩樂", "batter": "范國宸", "content": "壞球。", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 4, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.080125824, "z": 0.3870380880000001, "impact": 0.0, "dist_cm": 7.016191199999993, "pitcher": "艾菩樂", "batter": "范國宸", "content": "壞球。", "count_b": 1, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 4, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.497869464, "z": 0.382024128, "impact": 0.0, "dist_cm": 26.27204934716711, "pitcher": "艾菩樂", "batter": "范國宸", "content": "壞球。", "count_b": 2, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 4, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "富邦悍將", "is_correct": true}, {"x": 0.452012304, "z": 0.9633539280000001, "impact": 0.0, "dist_cm": 19.511230399999995, "pitcher": "艾菩樂", "batter": "王苡丞", "content": "壞球。", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 4, "outs": 1, "bases": [1, 0, 0], "sz_top": 0.9897500000000001, "sz_bottom": 0.49950000000000006, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.07311542400000001, "z": 0.143542512, "impact": 0.0, "dist_cm": 31.905748800000005, "pitcher": "艾菩樂", "batter": "王苡丞", "content": "壞球。", "count_b": 1, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 4, "outs": 1, "bases": [1, 0, 0], "sz_top": 0.9897500000000001, "sz_bottom": 0.49950000000000006, "favor_team": "富邦悍將", "is_correct": true}, {"x": 0.025380696, "z": 0.734077272, "impact": 0.0, "dist_cm": 23.151930399999998, "pitcher": "陳品宏", "batter": "宋嘉翔", "content": "好球沒揮棒。", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 5, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "富邦悍將", "is_correct": true}, {"x": 0.410510736, "z": 0.373444008, "impact": 0.0, "dist_cm": 18.437627949322938, "pitcher": "陳品宏", "batter": "馬傑森", "content": "壞球。", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 5, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.22389084, "z": 1.222702152, "impact": 0.0, "dist_cm": 22.28312965149497, "pitcher": "陳品宏", "batter": "馬傑森", "content": "壞球。", "count_b": 1, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 5, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.139915392, "z": 1.239024192, "impact": 0.0, "dist_cm": 23.912419199999995, "pitcher": "陳品宏", "batter": "馬傑森", "content": "壞球。", "count_b": 2, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 5, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.119688864, "z": 0.969175608, "impact": 0.0, "dist_cm": 3.072439200000006, "pitcher": "陳品宏", "batter": "馬傑森", "content": "好球沒揮棒。", "count_b": 3, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 5, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.381310896, "z": 1.191042576, "impact": 0.0, "dist_cm": 24.24288771986144, "pitcher": "陳品宏", "batter": "馬傑森", "content": "壞球。四壞球上壘。", "count_b": 3, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 5, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.240298224, "z": 0.968154528, "impact": 0.0, "dist_cm": 1.5957529838699556, "pitcher": "陳品宏", "batter": "陳晨威", "content": "好球沒揮棒。", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 5, "outs": 2, "bases": [1, 0, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "富邦悍將", "is_correct": true}, {"x": 0.06918350399999999, "z": 0.450186552, "impact": 0.0, "dist_cm": 0.10865519999999768, "pitcher": "陳品宏", "batter": "陳晨威", "content": "好球沒揮棒。", "count_b": 0, "count_s": 1, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 5, "outs": 2, "bases": [1, 0, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.3594963600000001, "z": 0.8830452240000001, "impact": 0.0, "dist_cm": 10.259636000000013, "pitcher": "陳品宏", "batter": "林智平", "content": "壞球。", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 5, "outs": 2, "bases": [1, 1, 0], "sz_top": 0.9523, "sz_bottom": 0.4806, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.268001496, "z": 0.9504791760000001, "impact": 0.2607350585189921, "dist_cm": 1.1101496000000002, "pitcher": "陳品宏", "batter": "林智平", "content": "好球沒揮棒。", "count_b": 1, "count_s": 0, "called": "STRIKE", "true_call": "BALL", "inning_half": "▲", "inning_num": 5, "outs": 2, "bases": [1, 1, 0], "sz_top": 0.9523, "sz_bottom": 0.4806, "favor_team": "富邦悍將", "is_correct": false, "type": "red"}, {"x": -0.28410408, "z": 1.497811584, "impact": 0.0, "dist_cm": 51.236516488016534, "pitcher": "陳品宏", "batter": "林智平", "content": "壞球。", "count_b": 1, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 5, "outs": 2, "bases": [1, 1, 0], "sz_top": 0.9523, "sz_bottom": 0.4806, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.291461952, "z": 0.739268016, "impact": 0.0, "dist_cm": 3.456195200000002, "pitcher": "艾菩樂", "batter": "林澤彬", "content": "壞球。", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 5, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9469500000000001, "sz_bottom": 0.47790000000000005, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.358630728, "z": 0.53434488, "impact": 0.0, "dist_cm": 10.1730728, "pitcher": "艾菩樂", "batter": "申皓瑋", "content": "壞球。", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 5, "outs": 0, "bases": [0, 1, 1], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.342128856, "z": 0.333210408, "impact": 0.0, "dist_cm": 16.509237184060986, "pitcher": "艾菩樂", "batter": "申皓瑋", "content": "壞球。", "count_b": 1, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 5, "outs": 0, "bases": [0, 1, 1], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "富邦悍將", "is_correct": true}, {"x": 0.22945344, "z": 1.05252012, "impact": 0.0, "dist_cm": 7.975379690626451, "pitcher": "艾菩樂", "batter": "林岱安", "content": "壞球。", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 5, "outs": 1, "bases": [0, 1, 0], "sz_top": 0.93625, "sz_bottom": 0.47250000000000003, "favor_team": "富邦悍將", "is_correct": true}, {"x": 0.233098848, "z": 1.36617456, "impact": 0.0, "dist_cm": 39.32240601386077, "pitcher": "艾菩樂", "batter": "林岱安", "content": "壞球。", "count_b": 1, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 5, "outs": 2, "bases": [0, 0, 0], "sz_top": 0.93625, "sz_bottom": 0.47250000000000003, "favor_team": "富邦悍將", "is_correct": true}, {"x": 0.09284208, "z": 0.716380584, "impact": 0.0, "dist_cm": 16.405792, "pitcher": "艾菩樂", "batter": "林岱安", "content": "好球沒揮棒。", "count_b": 2, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 5, "outs": 2, "bases": [0, 0, 0], "sz_top": 0.93625, "sz_bottom": 0.47250000000000003, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.301206408, "z": 0.58916316, "impact": 0.0, "dist_cm": 4.430640799999998, "pitcher": "艾菩樂", "batter": "林岱安", "content": "壞球。", "count_b": 2, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 5, "outs": 2, "bases": [0, 0, 0], "sz_top": 0.93625, "sz_bottom": 0.47250000000000003, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.0082296, "z": 0.971522568, "impact": 0.0, "dist_cm": 3.3727432000000017, "pitcher": "李建勳", "batter": "林泓育", "content": "好球沒揮棒。", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 6, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.96835, "sz_bottom": 0.4887, "favor_team": "富邦悍將", "is_correct": true}, {"x": 0.07705648799999999, "z": 1.166365968, "impact": 0.0, "dist_cm": 16.1115968, "pitcher": "李建勳", "batter": "林泓育", "content": "壞球。", "count_b": 0, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 6, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.96835, "sz_bottom": 0.4887, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.304230024, "z": 1.274890008, "impact": 0.0, "dist_cm": 25.017492912840833, "pitcher": "李建勳", "batter": "李勛傑", "content": "壞球。", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 6, "outs": 1, "bases": [0, 0, 0], "sz_top": 1.00045, "sz_bottom": 0.5049, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.353799648, "z": 0.6049518, "impact": 0.0, "dist_cm": 9.689964800000002, "pitcher": "李建勳", "batter": "李勛傑", "content": "壞球。", "count_b": 1, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 6, "outs": 1, "bases": [0, 0, 0], "sz_top": 1.00045, "sz_bottom": 0.5049, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.025911048, "z": 0.6059515440000001, "impact": 0.0, "dist_cm": 13.795154400000003, "pitcher": "李建勳", "batter": "李勛傑", "content": "好球沒揮棒。", "count_b": 2, "count_s": 1, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 6, "outs": 1, "bases": [0, 0, 0], "sz_top": 1.00045, "sz_bottom": 0.5049, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.176317656, "z": 0.429304704, "impact": 0.0, "dist_cm": 0.6295296000000048, "pitcher": "李建勳", "batter": "林子偉", "content": "壞球。", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 6, "outs": 2, "bases": [0, 0, 0], "sz_top": 0.93625, "sz_bottom": 0.47250000000000003, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.00126492, "z": 0.822219336, "impact": 0.0, "dist_cm": 15.093066400000005, "pitcher": "李建勳", "batter": "林子偉", "content": "好球沒揮棒。", "count_b": 1, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 6, "outs": 2, "bases": [0, 0, 0], "sz_top": 0.93625, "sz_bottom": 0.47250000000000003, "favor_team": "富邦悍將", "is_correct": true}, {"x": 0.135059928, "z": 0.758324112, "impact": 0.0, "dist_cm": 12.1840072, "pitcher": "艾菩樂", "batter": "劉俊豪", "content": "好球沒揮棒。", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 6, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9576500000000001, "sz_bottom": 0.48330000000000006, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.3874099440000001, "z": 0.117372384, "impact": 0.0, "dist_cm": 36.5504161883953, "pitcher": "艾菩樂", "batter": "劉俊豪", "content": "壞球。", "count_b": 0, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 6, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9576500000000001, "sz_bottom": 0.48330000000000006, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.306061872, "z": -0.4373697120000001, "impact": 0.0, "dist_cm": 88.77833860334614, "pitcher": "艾菩樂", "batter": "劉俊豪", "content": "壞球。", "count_b": 1, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 6, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9576500000000001, "sz_bottom": 0.48330000000000006, "favor_team": "富邦悍將", "is_correct": true}, {"x": 0.729907608, "z": 1.369210368, "impact": 0.0, "dist_cm": 61.837681570812265, "pitcher": "艾菩樂", "batter": "劉俊豪", "content": "壞球。", "count_b": 2, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 6, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9576500000000001, "sz_bottom": 0.48330000000000006, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.447397632, "z": 0.627805704, "impact": 0.0, "dist_cm": 19.049763199999997, "pitcher": "艾菩樂", "batter": "劉俊豪", "content": "壞球。四壞球上壘。", "count_b": 3, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 6, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9576500000000001, "sz_bottom": 0.48330000000000006, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.017425416, "z": 0.5955334800000001, "impact": 0.0, "dist_cm": 13.293348, "pitcher": "艾菩樂", "batter": "張育成", "content": "好球沒揮棒。", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 6, "outs": 1, "bases": [1, 0, 0], "sz_top": 0.9897500000000001, "sz_bottom": 0.49950000000000006, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.371343936, "z": 0.673025832, "impact": 0.0, "dist_cm": 11.444393599999998, "pitcher": "艾菩樂", "batter": "張育成", "content": "壞球。", "count_b": 0, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 6, "outs": 1, "bases": [1, 0, 0], "sz_top": 0.9897500000000001, "sz_bottom": 0.49950000000000006, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.288087816, "z": 0.4740950640000001, "impact": 0.0, "dist_cm": 3.5772976138410266, "pitcher": "艾菩樂", "batter": "張育成", "content": "壞球。", "count_b": 1, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 6, "outs": 1, "bases": [1, 0, 0], "sz_top": 0.9897500000000001, "sz_bottom": 0.49950000000000006, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.431974752, "z": 0.136654032, "impact": 0.0, "dist_cm": 38.332671497575994, "pitcher": "艾菩樂", "batter": "張育成", "content": "壞球。", "count_b": 2, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 6, "outs": 1, "bases": [1, 0, 0], "sz_top": 0.9897500000000001, "sz_bottom": 0.49950000000000006, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.325224648, "z": 0.857841312, "impact": 0.0, "dist_cm": 6.8324648, "pitcher": "艾菩樂", "batter": "林澤彬", "content": "壞球。", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 6, "outs": 1, "bases": [1, 1, 0], "sz_top": 0.9469500000000001, "sz_bottom": 0.47790000000000005, "favor_team": "富邦悍將", "is_correct": true}, {"x": 0.240429288, "z": 0.8625657120000001, "impact": 0.0, "dist_cm": 1.6470712000000012, "pitcher": "艾菩樂", "batter": "林澤彬", "content": "好球沒揮棒。", "count_b": 1, "count_s": 1, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 6, "outs": 1, "bases": [1, 1, 0], "sz_top": 0.9469500000000001, "sz_bottom": 0.47790000000000005, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.1469136, "z": 0.506525784, "impact": 0.0, "dist_cm": 5.2025783999999975, "pitcher": "艾菩樂", "batter": "董子恩", "content": "好球沒揮棒。", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 6, "outs": 2, "bases": [1, 1, 0], "sz_top": 0.9737000000000001, "sz_bottom": 0.49140000000000006, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.142658592, "z": 0.626601744, "impact": 0.0, "dist_cm": 11.4241408, "pitcher": "林栚呈", "batter": "劉子杰", "content": "好球沒揮棒。", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 7, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9523, "sz_bottom": 0.4806, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.248226072, "z": 1.005102384, "impact": 0.05949694307309794, "dist_cm": 2.297322353634078, "pitcher": "林栚呈", "batter": "劉子杰", "content": "好球沒揮棒。", "count_b": 0, "count_s": 1, "called": "STRIKE", "true_call": "BALL", "inning_half": "▲", "inning_num": 7, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9523, "sz_bottom": 0.4806, "favor_team": "富邦悍將", "is_correct": false, "type": "red"}, {"x": -0.32366712, "z": 0.8637788160000001, "impact": 0.0, "dist_cm": 6.6767119999999975, "pitcher": "林栚呈", "batter": "劉子杰", "content": "壞球。", "count_b": 0, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 7, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9523, "sz_bottom": 0.4806, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.13001244, "z": 0.7885755120000001, "impact": 0.0, "dist_cm": 12.688756000000001, "pitcher": "林栚呈", "batter": "馬傑森", "content": "好球沒揮棒。", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 7, "outs": 1, "bases": [1, 0, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.317787528, "z": 0.7667518320000001, "impact": 0.0, "dist_cm": 6.088752799999998, "pitcher": "林栚呈", "batter": "馬傑森", "content": "壞球。", "count_b": 0, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 7, "outs": 1, "bases": [0, 1, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.330884784, "z": 0.698196216, "impact": 0.0, "dist_cm": 7.398478399999998, "pitcher": "林栚呈", "batter": "馬傑森", "content": "壞球。", "count_b": 1, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 7, "outs": 1, "bases": [0, 1, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.600922344, "z": 0.435781704, "impact": 0.0, "dist_cm": 34.73183095736042, "pitcher": "劉昱言", "batter": "陳晨威", "content": "壞球。", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 7, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.168597072, "z": 0.598910664, "impact": 0.0, "dist_cm": 8.830292800000002, "pitcher": "劉昱言", "batter": "陳晨威", "content": "好球沒揮棒。", "count_b": 1, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 7, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "富邦悍將", "is_correct": true}, {"x": 0.488313984, "z": 0.753672864, "impact": 0.0, "dist_cm": 23.141398399999996, "pitcher": "劉昱言", "batter": "陳晨威", "content": "壞球。", "count_b": 1, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 7, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.463612992, "z": 0.747162336, "impact": 0.0, "dist_cm": 20.6712992, "pitcher": "劉昱言", "batter": "林泓育", "content": "壞球。", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 7, "outs": 2, "bases": [1, 0, 0], "sz_top": 0.96835, "sz_bottom": 0.4887, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.347691456, "z": 1.07442, "impact": 0.0, "dist_cm": 12.909985793789074, "pitcher": "劉昱言", "batter": "林泓育", "content": "壞球。", "count_b": 1, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 7, "outs": 2, "bases": [1, 0, 0], "sz_top": 0.96835, "sz_bottom": 0.4887, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.102272592, "z": 1.059451272, "impact": 0.0, "dist_cm": 4.350127199999991, "pitcher": "蘇俊璋", "batter": "申皓瑋", "content": "壞球。", "count_b": 0, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 7, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "富邦悍將", "is_correct": true}, {"x": 0.005879592000000001, "z": 0.419264592, "impact": 0.0, "dist_cm": 3.7935408000000046, "pitcher": "蘇俊璋", "batter": "申皓瑋", "content": "壞球。", "count_b": 1, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 7, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "富邦悍將", "is_correct": true}, {"x": 0.160608264, "z": 0.82530696, "impact": 0.0, "dist_cm": 9.6291736, "pitcher": "蘇俊璋", "batter": "林岱安", "content": "好球沒揮棒。", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 7, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.93625, "sz_bottom": 0.47250000000000003, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.11439144, "z": 0.3513551520000001, "impact": 0.0, "dist_cm": 8.424484799999991, "pitcher": "蘇俊璋", "batter": "林岱安", "content": "壞球。", "count_b": 0, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 7, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.93625, "sz_bottom": 0.47250000000000003, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.154695144, "z": 0.463625184, "impact": 0.0, "dist_cm": 1.7225183999999962, "pitcher": "蘇俊璋", "batter": "劉俊豪", "content": "好球沒揮棒。", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 7, "outs": 2, "bases": [0, 0, 0], "sz_top": 0.9576500000000001, "sz_bottom": 0.48330000000000006, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.236680248, "z": 0.718584288, "impact": 0.0, "dist_cm": 2.0219751999999995, "pitcher": "蘇俊璋", "batter": "孔念恩", "content": "好球沒揮棒。", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 7, "outs": 2, "bases": [1, 0, 0], "sz_top": 0.9844, "sz_bottom": 0.4968000000000001, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.509957832, "z": 0.3728923200000001, "impact": 0.0, "dist_cm": 27.84231001704801, "pitcher": "蘇俊璋", "batter": "孔念恩", "content": "壞球。", "count_b": 0, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 7, "outs": 2, "bases": [1, 0, 0], "sz_top": 0.9844, "sz_bottom": 0.4968000000000001, "favor_team": "富邦悍將", "is_correct": true}, {"x": 0.105530904, "z": 1.08583476, "impact": 0.0, "dist_cm": 12.338475999999991, "pitcher": "張奕", "batter": "林政華", "content": "壞球。", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 8, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9255500000000001, "sz_bottom": 0.4671, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.18740628, "z": 1.040245824, "impact": 0.0, "dist_cm": 7.7795824, "pitcher": "張奕", "batter": "林政華", "content": "壞球。", "count_b": 1, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 8, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9255500000000001, "sz_bottom": 0.4671, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.01690116, "z": 1.168868376, "impact": 0.0, "dist_cm": 20.641837599999995, "pitcher": "張奕", "batter": "林政華", "content": "壞球。", "count_b": 2, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 8, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9255500000000001, "sz_bottom": 0.4671, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.292693344, "z": 0.962601072, "impact": 0.0, "dist_cm": 4.4691079158517795, "pitcher": "張奕", "batter": "林政華", "content": "壞球。四壞球上壘。", "count_b": 3, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 8, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9255500000000001, "sz_bottom": 0.4671, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.062612016, "z": 1.208464944, "impact": 0.0, "dist_cm": 23.531494399999993, "pitcher": "張奕", "batter": "林子偉", "content": "壞球。", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 8, "outs": 0, "bases": [1, 0, 0], "sz_top": 0.93625, "sz_bottom": 0.47250000000000003, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.407185368, "z": 0.198244968, "impact": 0.0, "dist_cm": 29.51454555789259, "pitcher": "張奕", "batter": "林子偉", "content": "壞球。", "count_b": 1, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 8, "outs": 0, "bases": [1, 0, 0], "sz_top": 0.93625, "sz_bottom": 0.47250000000000003, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.462829656, "z": 0.538157928, "impact": 0.0, "dist_cm": 20.592965599999996, "pitcher": "張奕", "batter": "林子偉", "content": "壞球。", "count_b": 2, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 8, "outs": 0, "bases": [1, 0, 0], "sz_top": 0.93625, "sz_bottom": 0.47250000000000003, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.01987296, "z": 0.672550344, "impact": 0.0, "dist_cm": 22.345034399999996, "pitcher": "張奕", "batter": "馬傑森", "content": "好球沒揮棒。", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 8, "outs": 2, "bases": [0, 1, 1], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.482708712, "z": 0.228151944, "impact": 0.0, "dist_cm": 33.12052666611524, "pitcher": "張奕", "batter": "馬傑森", "content": "壞球。", "count_b": 0, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 8, "outs": 2, "bases": [0, 1, 1], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.168350184, "z": 1.452439056, "impact": 0.0, "dist_cm": 45.253905599999996, "pitcher": "張奕", "batter": "馬傑森", "content": "壞球。", "count_b": 1, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 8, "outs": 2, "bases": [0, 1, 1], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.368195352, "z": 0.00669036, "impact": 0.0, "dist_cm": 46.479671451120105, "pitcher": "張奕", "batter": "馬傑森", "content": "壞球。", "count_b": 2, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 8, "outs": 2, "bases": [0, 1, 1], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.06646468800000001, "z": 1.144484376, "impact": 0.0, "dist_cm": 14.458437600000002, "pitcher": "張奕", "batter": "馬傑森", "content": "壞球。四壞球上壘。", "count_b": 3, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 8, "outs": 2, "bases": [0, 1, 1], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.088001856, "z": 1.043882088, "impact": 0.17081251087740235, "dist_cm": 3.3282087999999805, "pitcher": "張奕", "batter": "林立", "content": "好球沒揮棒。", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "BALL", "inning_half": "▲", "inning_num": 8, "outs": 2, "bases": [1, 1, 1], "sz_top": 0.9737000000000001, "sz_bottom": 0.49140000000000006, "favor_team": "富邦悍將", "is_correct": false, "type": "red"}, {"x": -0.13877544, "z": 0.069521832, "impact": 0.0, "dist_cm": 38.49781680000001, "pitcher": "張奕", "batter": "林立", "content": "壞球。", "count_b": 0, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 8, "outs": 2, "bases": [1, 1, 1], "sz_top": 0.9737000000000001, "sz_bottom": 0.49140000000000006, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.188890656, "z": 0.9878598480000002, "impact": 0.0, "dist_cm": 2.2740151999999973, "pitcher": "張奕", "batter": "林立", "content": "好球沒揮棒。", "count_b": 1, "count_s": 1, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 8, "outs": 2, "bases": [1, 1, 1], "sz_top": 0.9737000000000001, "sz_bottom": 0.49140000000000006, "favor_team": "富邦悍將", "is_correct": true}, {"x": 0.158675832, "z": 0.497771928, "impact": 0.0, "dist_cm": 4.8671927999999935, "pitcher": "王浩原", "batter": "陳晨威", "content": "好球沒揮棒。", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 8, "outs": 2, "bases": [1, 1, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.123285504, "z": 0.215039448, "impact": 0.0, "dist_cm": 23.406055200000004, "pitcher": "王浩原", "batter": "陳晨威", "content": "壞球。", "count_b": 0, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 8, "outs": 2, "bases": [1, 1, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.356259384, "z": 0.087099648, "impact": 0.0, "dist_cm": 38.46306756972539, "pitcher": "王浩原", "batter": "陳晨威", "content": "壞球。", "count_b": 1, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 8, "outs": 2, "bases": [1, 1, 0], "sz_top": 0.9630000000000001, "sz_bottom": 0.48600000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.267623544, "z": 0.68263008, "impact": 0.09321120702399244, "dist_cm": 1.0723543999999987, "pitcher": "陳冠宇", "batter": "張育成", "content": "好球沒揮棒。", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "BALL", "inning_half": "▼", "inning_num": 8, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9897500000000001, "sz_bottom": 0.49950000000000006, "favor_team": "樂天桃猿", "is_correct": false, "type": "red"}, {"x": 0.070350888, "z": 0.673239192, "impact": 0.0, "dist_cm": 18.6549112, "pitcher": "陳冠宇", "batter": "張育成", "content": "好球沒揮棒。", "count_b": 0, "count_s": 1, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 8, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9897500000000001, "sz_bottom": 0.49950000000000006, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.262576056, "z": 1.190405544, "impact": 0.0, "dist_cm": 17.870122106345104, "pitcher": "陳冠宇", "batter": "范國宸", "content": "壞球。", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 8, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.08809634400000001, "z": 0.60199524, "impact": 0.0, "dist_cm": 14.479524, "pitcher": "陳冠宇", "batter": "范國宸", "content": "好球沒揮棒。", "count_b": 1, "count_s": 1, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 8, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.5417058, "z": 0.56651652, "impact": 0.0, "dist_cm": 28.480580000000007, "pitcher": "陳冠宇", "batter": "范國宸", "content": "壞球。", "count_b": 1, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 8, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "富邦悍將", "is_correct": true}, {"x": 0.228459792, "z": 0.7985394240000001, "impact": 0.17936633024332815, "dist_cm": 2.844020800000001, "pitcher": "陳冠宇", "batter": "范國宸", "content": "壞球。", "count_b": 2, "count_s": 2, "called": "BALL", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 8, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "富邦悍將", "is_correct": false, "type": "green"}, {"x": -0.321813936, "z": 1.097353152, "impact": 0.0, "dist_cm": 11.91823927832578, "pitcher": "陳冠宇", "batter": "王念好", "content": "壞球。", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 8, "outs": 2, "bases": [0, 0, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.086605872, "z": 0.937866552, "impact": 0.0, "dist_cm": 7.808344800000007, "pitcher": "陳冠宇", "batter": "王念好", "content": "好球沒揮棒。 打者出局-三振出局。 3人出局。", "count_b": 1, "count_s": 2, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 8, "outs": 2, "bases": [0, 0, 0], "sz_top": 0.9790500000000001, "sz_bottom": 0.49410000000000004, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.1670304, "z": 0.6372941280000001, "impact": 0.0, "dist_cm": 8.986960000000002, "pitcher": "廖任磊", "batter": "林智平", "content": "好球沒揮棒。", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 9, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9523, "sz_bottom": 0.4806, "favor_team": "富邦悍將", "is_correct": true}, {"x": 0.76968096, "z": 0.948839352, "impact": 0.0, "dist_cm": 51.278096, "pitcher": "廖任磊", "batter": "林智平", "content": "壞球。", "count_b": 0, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 9, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9523, "sz_bottom": 0.4806, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.150491952, "z": 0.855259656, "impact": 0.0, "dist_cm": 10.6408048, "pitcher": "廖任磊", "batter": "林泓育", "content": "好球沒揮棒。", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 9, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.96835, "sz_bottom": 0.4887, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.128558544, "z": 0.360218736, "impact": 0.0, "dist_cm": 6.998126400000003, "pitcher": "廖任磊", "batter": "林政華", "content": "壞球。", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 9, "outs": 2, "bases": [0, 0, 0], "sz_top": 0.9255500000000001, "sz_bottom": 0.4671, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.6787987440000001, "z": 0.79482696, "impact": 0.0, "dist_cm": 42.18987440000001, "pitcher": "廖任磊", "batter": "林政華", "content": "壞球。", "count_b": 1, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 9, "outs": 2, "bases": [0, 0, 0], "sz_top": 0.9255500000000001, "sz_bottom": 0.4671, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.360968544, "z": 1.067403504, "impact": 0.0, "dist_cm": 16.30863670217496, "pitcher": "廖任磊", "batter": "林政華", "content": "壞球。", "count_b": 2, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 9, "outs": 2, "bases": [0, 0, 0], "sz_top": 0.9255500000000001, "sz_bottom": 0.4671, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.05405628000000001, "z": 1.239261936, "impact": 0.0, "dist_cm": 27.681193599999983, "pitcher": "廖任磊", "batter": "林政華", "content": "壞球。四壞球上壘。", "count_b": 3, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▲", "inning_num": 9, "outs": 2, "bases": [0, 0, 0], "sz_top": 0.9255500000000001, "sz_bottom": 0.4671, "favor_team": "樂天桃猿", "is_correct": true}, {"x": 0.089589864, "z": 0.8679515280000001, "impact": 0.0, "dist_cm": 10.519847199999994, "pitcher": "廖任磊", "batter": "林子偉", "content": "好球沒揮棒。", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 9, "outs": 2, "bases": [1, 0, 0], "sz_top": 0.93625, "sz_bottom": 0.47250000000000003, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.244766592, "z": 0.6147114960000001, "impact": 0.0, "dist_cm": 1.2133407999999999, "pitcher": "廖任磊", "batter": "劉子杰", "content": "好球沒揮棒。", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▲", "inning_num": 9, "outs": 2, "bases": [1, 0, 1], "sz_top": 0.9523, "sz_bottom": 0.4806, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.33928812, "z": 0.4972050000000001, "impact": 0.0, "dist_cm": 8.238812000000003, "pitcher": "朱承洋", "batter": "林澤彬", "content": "壞球。", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 9, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9469500000000001, "sz_bottom": 0.47790000000000005, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.08400288, "z": 0.669145728, "impact": 0.0, "dist_cm": 17.289712, "pitcher": "朱承洋", "batter": "林澤彬", "content": "好球沒揮棒。", "count_b": 1, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 9, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9469500000000001, "sz_bottom": 0.47790000000000005, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.4825044960000001, "z": 0.111096552, "impact": 0.0, "dist_cm": 41.4158067087712, "pitcher": "朱承洋", "batter": "林澤彬", "content": "壞球。", "count_b": 1, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 9, "outs": 0, "bases": [0, 0, 0], "sz_top": 0.9469500000000001, "sz_bottom": 0.47790000000000005, "favor_team": "富邦悍將", "is_correct": true}, {"x": 0.02168652, "z": 0.5923605120000001, "impact": 0.0, "dist_cm": 13.7860512, "pitcher": "朱承洋", "batter": "董子恩", "content": "好球沒揮棒。", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 9, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.9737000000000001, "sz_bottom": 0.49140000000000006, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.3145048320000001, "z": 0.659005032, "impact": 0.0, "dist_cm": 5.760483200000012, "pitcher": "朱承洋", "batter": "董子恩", "content": "壞球。", "count_b": 0, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 9, "outs": 1, "bases": [0, 0, 0], "sz_top": 0.9737000000000001, "sz_bottom": 0.49140000000000006, "favor_team": "富邦悍將", "is_correct": true}, {"x": 0.07947355200000002, "z": 0.7907761680000001, "impact": 0.0, "dist_cm": 17.742644799999997, "pitcher": "朱承洋", "batter": "林書逸", "content": "好球沒揮棒。", "count_b": 0, "count_s": 0, "called": "STRIKE", "true_call": "STRIKE", "inning_half": "▼", "inning_num": 9, "outs": 1, "bases": [1, 0, 0], "sz_top": 0.96835, "sz_bottom": 0.4887, "favor_team": "樂天桃猿", "is_correct": true}, {"x": -0.127967232, "z": 0.3597432480000001, "impact": 0.0, "dist_cm": 9.20567519999999, "pitcher": "朱承洋", "batter": "林書逸", "content": "壞球。", "count_b": 0, "count_s": 2, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 9, "outs": 1, "bases": [1, 0, 0], "sz_top": 0.96835, "sz_bottom": 0.4887, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.29080968, "z": 0.27758136, "impact": 0.0, "dist_cm": 18.83385881529895, "pitcher": "朱承洋", "batter": "戴培峰", "content": "壞球。", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 9, "outs": 2, "bases": [1, 0, 0], "sz_top": 0.9737000000000001, "sz_bottom": 0.49140000000000006, "favor_team": "富邦悍將", "is_correct": true}, {"x": 0.476917512, "z": 0.612303576, "impact": 0.0, "dist_cm": 22.0017512, "pitcher": "朱承洋", "batter": "劉俊豪", "content": "壞球。", "count_b": 0, "count_s": 0, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 9, "outs": 2, "bases": [0, 1, 1], "sz_top": 0.9576500000000001, "sz_bottom": 0.48330000000000006, "favor_team": "富邦悍將", "is_correct": true}, {"x": -0.483293928, "z": -0.123407424, "impact": 0.0, "dist_cm": 62.44755293767565, "pitcher": "朱承洋", "batter": "劉俊豪", "content": "壞球。", "count_b": 1, "count_s": 1, "called": "BALL", "true_call": "BALL", "inning_half": "▼", "inning_num": 9, "outs": 2, "bases": [0, 1, 1], "sz_top": 0.9576500000000001, "sz_bottom": 0.48330000000000006, "favor_team": "富邦悍將", "is_correct": true}];
+            const svgW = 400;
+            const svgH = 450;
+            const xMin = -0.5;
+            const xMax = 0.5;
+            const zMin = 0.15;
+            const zMax = 1.25;
+            const SZ_BOTTOM = 0.486;
+            const SZ_TOP = 0.963;
+            const awayColor = "#BF0040";
+            const homeColor = "#004A9C";
+            const awayTeam = "樂天桃猿";
+            const homeTeam = "富邦悍將";
+            
+            let isShowAll = false;
+            let currentTolerance = 0;
+
+            function mapX(x) { return (xMax - x) / (xMax - xMin) * svgW; }
+            function mapZ(z) { return svgH - ((z - zMin) / (zMax - zMin) * svgH); }
+
+            function generateBaseSVG(bases) {
+                const b1 = bases[0] ? "#D32F2F" : "#fff";
+                const b2 = bases[1] ? "#D32F2F" : "#fff";
+                const b3 = bases[2] ? "#D32F2F" : "#fff";
+                return `
+                <svg width="24" height="24" viewBox="0 0 50 50" style="vertical-align: middle; margin: 0 5px;">
+                    <polygon points="25,5 35,15 25,25 15,15" fill="${b2}" stroke="#333" stroke-width="1.5"/>
+                    <polygon points="35,15 45,25 35,35 25,25" fill="${b1}" stroke="#333" stroke-width="1.5"/>
+                    <polygon points="15,15 25,25 15,35 5,25" fill="${b3}" stroke="#333" stroke-width="1.5"/>
+                </svg>`;
+            }
+
+            function updateDonut(idPrefix, percentage, subLabel) {
+                const circle = document.getElementById(idPrefix + '-circle');
+                const text = document.getElementById(idPrefix + '-text');
+                const sub = document.getElementById(idPrefix + '-sub');
+                
+                const radius = 60;
+                const circumference = 2 * 3.14159 * radius;
+                const offset = circumference - (percentage / 100) * circumference;
+                
+                if (circle) circle.setAttribute('stroke-dashoffset', offset);
+                if (text) text.textContent = percentage.toFixed(1) + '%';
+                if (subLabel && sub) sub.textContent = subLabel;
+            }
+
+            function updateFavor(favorVal) {
+                const circle = document.getElementById('favor-circle');
+                const text = document.getElementById('favor-text');
+                const sub = document.getElementById('favor-sub');
+                
+                const absVal = Math.abs(favorVal);
+                const team = favorVal >= 0 ? homeTeam : awayTeam;
+                const color = favorVal >= 0 ? homeColor : awayColor;
+                const sign = "+";
+                
+                if (circle) circle.setAttribute('fill', color);
+                if (text) text.textContent = sign + absVal.toFixed(2);
+                if (sub) {
+                    sub.textContent = team;
+                    sub.style.color = color;
+                }
+            }
+
+            function renderDots(tolerance, showAll) {
+                const container = document.getElementById('dots-container');
+                const tooltip = document.getElementById('tooltip');
+                const title = document.getElementById('plot-title-text');
+                container.innerHTML = '';
+                
+                title.innerText = showAll ? '所有判決球點' : '所有誤判球點';
+
+                const effectiveMissed = allCalls.filter(p => !p.is_correct && p.dist_cm >= tolerance);
+                effectiveMissed.sort((a, b) => b.impact - a.impact);
+
+                function drawPitch(p, isMissed) {
+                    const zNorm = SZ_BOTTOM + (p.z - p.sz_bottom) * (SZ_TOP - SZ_BOTTOM) / (p.sz_top - p.sz_bottom);
+                    const cx = mapX(p.x);
+                    const cy_val = mapZ(zNorm);
+                    
+                    const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                    circle.setAttribute("cx", cx);
+                    circle.setAttribute("cy", cy_val);
+                    circle.setAttribute("r", "14.76");
+                    circle.style.cursor = "pointer";
+                    
+                    if (!isMissed) {
+                        circle.setAttribute("fill", "transparent");
+                        circle.setAttribute("stroke", p.called === "STRIKE" ? "rgba(255, 128, 128, 0.8)" : "rgba(128, 200, 128, 0.8)");
+                        circle.setAttribute("stroke-width", "2");
+                        container.appendChild(circle);
+                    } else {
+                        const color = (p.called === "STRIKE") ? "rgba(255, 128, 128, 0.9)" : "rgba(128, 200, 128, 0.9)";
+                        circle.setAttribute("fill", color);
+                        
+                        circle.onmouseover = (e) => {
+                            const fColor = (p.favor_team === homeTeam) ? homeColor : awayColor;
+                            const calledLabel = p.called === 'STRIKE' ? '好球' : '壞球';
+                            tooltip.innerHTML = `
+                                <div class="context">
+                                    ${p.inning_half} ${p.inning_num} ${generateBaseSVG(p.bases)} ${p.outs} 出局 ${p.count_b}-${p.count_s}
+                                </div>
+                                <div class="players">
+                                    投手: ${p.pitcher}<br>
+                                    打者: ${p.batter}<br>
+                                    備註: ${p.content}
+                                </div>
+                                <div class="call-result">
+                                    <span class="badge-cross">☒ ${p.dist_cm.toFixed(1)} cm</span>
+                                    <span class="badge-check">${calledLabel}</span>
+                                    <span class="run-impact" style="background-color: ${fColor};">+${p.impact.toFixed(2)} ${p.favor_team}</span>
+                                </div>
+                            `;
+                            tooltip.style.display = 'block';
+                        };
+                        circle.onmousemove = (e) => {
+                            tooltip.style.left = (e.pageX + 15) + 'px';
+                            tooltip.style.top = (e.pageY + 15) + 'px';
+                        };
+                        circle.onmouseout = () => { tooltip.style.display = 'none'; };
+                        
+                        const mIndex = effectiveMissed.indexOf(p);
+                        const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                        text.setAttribute("x", cx);
+                        text.setAttribute("y", cy_val + 4);
+                        text.setAttribute("text-anchor", "middle");
+                        text.setAttribute("font-size", "12");
+                        text.setAttribute("font-weight", "bold");
+                        text.setAttribute("fill", "#000");
+                        text.textContent = mIndex + 1;
+                        text.style.pointerEvents = "none";
+                        
+                        container.appendChild(circle);
+                        container.appendChild(text);
+                    }
+                }
+
+                if (showAll) {
+                    allCalls.forEach(p => {
+                        const isCorrect = p.is_correct || p.dist_cm < tolerance;
+                        if (isCorrect) drawPitch(p, false);
+                    });
+                }
+
+                const reverseMissed = [...effectiveMissed].reverse();
+                reverseMissed.forEach(p => {
+                    drawPitch(p, true);
+                });
+            }
+
+            function renderDetails(missed) {
+                const list = document.getElementById('missed-list');
+                list.innerHTML = '';
+                
+                missed.slice(0, 3).forEach((mc, i) => {
+                    const fColor = mc.favor_team === homeTeam ? homeColor : awayColor;
+                    const item = document.createElement('li');
+                    item.innerHTML = `
+                        <div class="rank">${i+1}:</div>
+                        <div class="content">
+                            <div class="context">
+                                ${mc.inning_half} ${mc.inning_num} ${generateBaseSVG(mc.bases)} ${mc.outs} 出局 ${mc.count_b}-${mc.count_s}
+                            </div>
+                            <div class="players">
+                                投手: ${mc.pitcher}<br>
+                                打者: ${mc.batter}
+                            </div>
+                            <div class="call-result">
+                                <span class="badge-cross">☒ ${mc.dist_cm.toFixed(1)} cm</span>
+                                <span class="badge-check">${mc.called === 'STRIKE' ? '好球' : '壞球'}</span>
+                                <span class="run-impact" style="background-color: ${fColor};">+${mc.impact.toFixed(2)} ${mc.favor_team}</span>
+                            </div>
+                        </div>
+                    `;
+                    list.appendChild(item);
+                });
+            }
+
+            function updateTolerance(val) {
+                currentTolerance = parseFloat(val);
+                document.getElementById('tolerance-val').innerText = currentTolerance.toFixed(1);
+                
+                const effectiveMissed = allCalls.filter(p => !p.is_correct && p.dist_cm >= currentTolerance);
+                effectiveMissed.sort((a, b) => b.impact - a.impact);
+
+                const effectiveCorrect = allCalls.filter(p => p.is_correct || p.dist_cm < currentTolerance);
+                
+                const total = allCalls.length;
+                const overallAcc = (effectiveCorrect.length / total) * 100;
+                
+                const trueBalls = allCalls.filter(p => p.true_call === 'BALL');
+                const ballCorrect = trueBalls.filter(p => p.called === 'BALL' || p.dist_cm < currentTolerance);
+                const ballAcc = trueBalls.length > 0 ? (ballCorrect.length / trueBalls.length) * 100 : 100;
+                
+                const trueStrikes = allCalls.filter(p => p.true_call === 'STRIKE');
+                const strikeCorrect = trueStrikes.filter(p => p.called === 'STRIKE' || p.dist_cm < currentTolerance);
+                const strikeAcc = trueStrikes.length > 0 ? (strikeCorrect.length / trueStrikes.length) * 100 : 100;
+                
+                let homeGain = 0;
+                let awayGain = 0;
+                effectiveMissed.forEach(p => {
+                    if (p.favor_team === homeTeam) homeGain += p.impact;
+                    else awayGain += p.impact;
+                });
+                const netFavor = homeGain - awayGain;
+                
+                const overallAccText = document.getElementById('overall-acc-text');
+                const overallSub = document.getElementById('overall-sub');
+                const overallCircle = document.getElementById('overall-circle');
+                if (overallAccText) overallAccText.textContent = overallAcc.toFixed(1) + '%';
+                if (overallSub) overallSub.textContent = `${effectiveCorrect.length}/${total}`;
+                if (overallCircle) {
+                    const radius = 60;
+                    const circumference = 2 * 3.14159 * radius;
+                    const offset = circumference - (overallAcc / 100) * circumference;
+                    overallCircle.setAttribute('stroke-dashoffset', offset);
+                }
+                
+                updateDonut('ball', ballAcc, `${ballCorrect.length}/${trueBalls.length}`);
+                updateDonut('strike', strikeAcc, `${strikeCorrect.length}/${trueStrikes.length}`);
+                updateFavor(netFavor);
+                
+                renderDots(currentTolerance, isShowAll);
+                renderDetails(effectiveMissed);
+            }
+
+            function showMissed() {
+                isShowAll = false;
+                document.getElementById('btn-missed').classList.add('active');
+                document.getElementById('btn-all').classList.remove('active');
+                renderDots(currentTolerance, false);
+            }
+
+            function showAll() {
+                isShowAll = true;
+                document.getElementById('btn-all').classList.add('active');
+                document.getElementById('btn-missed').classList.remove('active');
+                renderDots(currentTolerance, true);
+            }
+
+            window.onload = () => {
+                updateTolerance(0);
+            };
+        </script>
+            <div class="footer">
+                本報告為非官方自動化分析，僅供參考。數據來源：中華職棒進階數據網站公開資料
+            </div>
+        </div>
+    </body>
+</html>
+    
